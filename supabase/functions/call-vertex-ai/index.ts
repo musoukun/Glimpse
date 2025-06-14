@@ -287,7 +287,7 @@ ${message}`
 async function checkUsageLimit(userId: string): Promise<boolean> {
 	const currentMonth = new Date().toISOString().slice(0, 7) // YYYY-MM format
 
-	// サブスクリプション情報を取得（Firebase UIDを文字列として扱う）
+	// サブスクリプション情報を取得
 	const { data: subscription } = await supabase
 		.from("user_subscriptions")
 		.select("plan_type, monthly_limit")

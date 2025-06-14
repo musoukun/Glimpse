@@ -46,7 +46,7 @@ function createWindow(): void {
 			sandbox: false,
 			contextIsolation: true,
 			nodeIntegration: false,
-			webSecurity: false, // Firebase認証のポップアップを許可
+			webSecurity: false, // 開発環境での外部リソースアクセスを許可
 		},
 	});
 
@@ -85,8 +85,8 @@ function createWindow(): void {
 	});
 
 	mainWindow.webContents.setWindowOpenHandler((details) => {
-		// Firebase認証のポップアップを許可
-		if (details.url.includes('accounts.google.com') || details.url.includes('firebase')) {
+		// Supabase認証のポップアップを許可
+		if (details.url.includes('accounts.google.com') || details.url.includes('supabase')) {
 			return { action: "allow" };
 		}
 		// その他の外部URLは外部ブラウザで開く
@@ -103,177 +103,7 @@ function createWindow(): void {
 	}
 }
 
-// Firebase OAuth認証ウィンドウを開く関数
-async function createFirebaseOAuthWindow(): Promise<{ success: boolean; user?: { uid: string; email: string | null; displayName: string | null }; error?: string }> {
-	return new Promise((resolve) => {
-		// Firebase OAuth認証用のウィンドウを作成
-		const authWindow = new BrowserWindow({
-			width: 500,
-			height: 600,
-			show: true,
-			modal: true,
-			parent: mainWindow || undefined,
-			webPreferences: {
-				nodeIntegration: false,
-				contextIsolation: true,
-			},
-		});
 
-		// Firebase OAuth URLを構築（正しいGoogle OAuth URL）
-		// 注意: 実際のGoogle Client IDを設定する必要があります
-		const clientId = '288565820334-xxxxxxxxxxxxxxxxxxxxxxxxxx.apps.googleusercontent.com'; // Google Cloud Consoleから取得したClient ID
-		const redirectUri = 'https://glimpse-dfe44.firebaseapp.com/__/auth/handler';
-		const firebaseOAuthUrl = `https://accounts.google.com/o/oauth2/auth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=openid%20email%20profile&state=firebase-auth`;
-
-		console.log('Firebase OAuth URL:', firebaseOAuthUrl);
-
-		// Firebase OAuth認証ページを読み込み
-		authWindow.loadURL(firebaseOAuthUrl);
-
-		// URLの変更を監視してコールバックを処理
-		authWindow.webContents.on('will-navigate', (event, url) => {
-			handleFirebaseAuthCallback(url, authWindow, resolve);
-		});
-
-		authWindow.webContents.on('did-navigate', (event, url) => {
-			handleFirebaseAuthCallback(url, authWindow, resolve);
-		});
-
-		// ウィンドウが閉じられた場合の処理
-		authWindow.on('closed', () => {
-			resolve({ success: false, error: 'ユーザーによって認証がキャンセルされました' });
-		});
-	});
-}
-
-// OAuth認証ウィンドウを開く関数
-async function createOAuthWindow(oauthUrl: string): Promise<{ success: boolean; session?: { access_token: string; refresh_token: string | null; user: { id: string } }; error?: string }> {
-	return new Promise((resolve) => {
-		// OAuth認証用のウィンドウを作成
-		const authWindow = new BrowserWindow({
-			width: 500,
-			height: 600,
-			show: true,
-			modal: true,
-			parent: mainWindow || undefined,
-			webPreferences: {
-				nodeIntegration: false,
-				contextIsolation: true,
-			},
-		});
-
-		console.log('OAuth URL:', oauthUrl);
-
-		// OAuth認証ページを読み込み
-		authWindow.loadURL(oauthUrl);
-
-		// ウィンドウが閉じられた時の処理
-		authWindow.on('closed', () => {
-			resolve({ success: false, error: 'ユーザーによって認証がキャンセルされました' });
-		});
-
-		// ページの変更を監視
-		authWindow.webContents.on('will-redirect', (event, navigationUrl) => {
-			console.log('Redirect detected:', navigationUrl);
-			handleAuthCallback(navigationUrl, authWindow, resolve);
-		});
-
-		authWindow.webContents.on('did-navigate', (event, navigationUrl) => {
-			console.log('Navigation detected:', navigationUrl);
-			handleAuthCallback(navigationUrl, authWindow, resolve);
-		});
-	});
-}
-
-// Firebase認証コールバックを処理する関数
-function handleFirebaseAuthCallback(
-	url: string, 
-	authWindow: BrowserWindow, 
-	resolve: (value: { success: boolean; user?: { uid: string; email: string | null; displayName: string | null }; error?: string }) => void
-) {
-	console.log('Firebase callback URL:', url);
-
-	// Firebase認証の成功を検出（認証コードを取得）
-	if (url.includes('glimpse-dfe44.firebaseapp.com') && url.includes('code=')) {
-		try {
-			// URLから認証コードを抽出
-			const urlParams = new URLSearchParams(url.split('?')[1]);
-			const code = urlParams.get('code');
-			const state = urlParams.get('state');
-
-			if (code && state === 'firebase-auth') {
-				console.log('Firebase認証コード取得成功:', { code: code.substring(0, 10) + '...' });
-				
-				// 認証コードを使用してFirebaseトークンを取得
-				// 実際の実装では、ここでFirebase Auth REST APIを呼び出してトークンを取得します
-				const user = {
-					uid: 'firebase-user-' + Date.now(),
-					email: 'user@example.com',
-					displayName: 'Firebase User'
-				};
-
-				authWindow.close();
-				resolve({ success: true, user });
-				return;
-			}
-		} catch (error) {
-			console.error('Firebase認証コード処理エラー:', error);
-		}
-	}
-
-	// エラーの検出
-	if (url.includes('error')) {
-		const urlParams = new URLSearchParams(url.split('?')[1]);
-		const error = urlParams.get('error') || 'Firebase認証エラー';
-		console.error('Firebase認証エラー:', error);
-		authWindow.close();
-		resolve({ success: false, error });
-	}
-}
-
-// OAuth認証コールバックを処理する関数
-function handleAuthCallback(
-	url: string, 
-	authWindow: BrowserWindow, 
-	resolve: (value: { success: boolean; session?: { access_token: string; refresh_token: string | null; user: { id: string } }; error?: string }) => void
-) {
-	// コールバックURLかどうかをチェック
-	if (url.includes('/auth/v1/callback') || url.includes('access_token=')) {
-		console.log('OAuth callback detected:', url);
-		
-		try {
-			// URLからトークンを抽出
-			const urlObj = new URL(url.replace('#', '?'));
-			const accessToken = urlObj.searchParams.get('access_token');
-			const refreshToken = urlObj.searchParams.get('refresh_token');
-			const error = urlObj.searchParams.get('error');
-			const errorDescription = urlObj.searchParams.get('error_description');
-
-			if (error) {
-				authWindow.close();
-				resolve({ success: false, error: `OAuth認証エラー: ${error} - ${errorDescription}` });
-				return;
-			}
-
-			if (accessToken) {
-				// 認証成功
-				const session = {
-					access_token: accessToken,
-					refresh_token: refreshToken,
-					user: { id: 'temp-user-id' } // 実際のユーザー情報は後で取得
-				};
-
-				authWindow.close();
-				resolve({ success: true, session });
-				return;
-			}
-		} catch (error) {
-			console.error('OAuth callback processing error:', error);
-			authWindow.close();
-			resolve({ success: false, error: 'OAuth認証の処理中にエラーが発生しました' });
-		}
-	}
-}
 
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
@@ -355,19 +185,6 @@ app.whenReady().then(() => {
 		console.log('User signed out');
 		// 必要に応じて処理を追加
 		return true;
-	});
-
-	// Firebase OAuth認証ウィンドウを開くIPCハンドラー
-	ipcMain.handle('firebase:oauth-window', async () => {
-		try {
-			console.log('Firebase OAuth window opening...');
-			const result = await createFirebaseOAuthWindow();
-			console.log('Firebase OAuth result:', result);
-			return result;
-		} catch (error) {
-			console.error('Firebase OAuth window error:', error);
-			return { success: false, error: 'Firebase OAuth認証ウィンドウの作成に失敗しました' };
-		}
 	});
 
 	// 外部URLを開くIPCハンドラー

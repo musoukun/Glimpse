@@ -22,14 +22,8 @@ export interface IApi {
 	authSuccess: (authData: any) => Promise<boolean>
 	authSignOut: () => Promise<boolean>
 	
-	// OAuth認証関連（後方互換性）
-	openOAuthWindow: (oauthUrl: string) => Promise<{ success: boolean; session?: { access_token: string; refresh_token: string | null; user: { id: string } }; error?: string }>
-	openFirebaseOAuthWindow: () => Promise<{ success: boolean; user?: { uid: string; email: string | null; displayName: string | null }; error?: string }>
+	// 外部URLを開く
 	openExternal: (url: string) => Promise<boolean>
-	
-	// Firebase関連（後方互換性のため保持）
-	firebaseAuth: (action: string, data?: Record<string, unknown>) => Promise<unknown>
-	firebaseStore: (action: string, data?: Record<string, unknown>) => Promise<unknown>
 	
 	// ファイル関連
 	selectFile: () => Promise<{

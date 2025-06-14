@@ -1,7 +1,13 @@
-import { Part } from "firebase/ai";
+// Partタイプの定義
+interface Part {
+  inlineData: {
+    data: string;
+    mimeType: string;
+  };
+}
 
 /**
- * Converts a File object into a Firebase AI SDK Part object suitable for multimodal requests.
+ * Converts a File object into a Part object suitable for multimodal requests.
  * Reads the file as a base64-encoded string and includes its MIME type.
  *
  * @param file The File object (e.g., from an <input type="file"> element).

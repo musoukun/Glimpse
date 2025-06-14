@@ -41,5 +41,27 @@
 		"typescript": "~5.8.3",
 		"typescript-eslint": "^8.30.1",
 		"vite": "^6.3.5"
+	},
+	"build": {
+		"appId": "com.glimpse.app",
+		"productName": "Glimpse",
+		"directories": {
+			"output": "dist"
+		},
+		"files": [
+			"out/**/*"
+		],
+		"win": {
+			"icon": "public/glimpse-icon.png",
+			"target": "nsis"
+		},
+		"mac": {
+			"icon": "public/glimpse-icon.png",
+			"category": "public.app-category.productivity"
+		},
+		"linux": {
+			"icon": "public/glimpse-icon.png",
+			"target": "AppImage"
+		}
 	}
 }

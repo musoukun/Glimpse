@@ -18,16 +18,8 @@ const api = {
 	authSuccess: (authData: any) => ipcRenderer.invoke("auth:success", authData),
 	authSignOut: () => ipcRenderer.invoke("auth:signout"),
 	
-	// OAuth認証関連のAPI（後方互換性）
-	openOAuthWindow: (oauthUrl: string) => ipcRenderer.invoke("oauth:open-window", oauthUrl),
-	openFirebaseOAuthWindow: () => ipcRenderer.invoke("firebase:oauth-window"),
+	// 外部URLを開くAPI
 	openExternal: (url: string) => ipcRenderer.invoke("oauth:open-external", url),
-
-	// Firebase関連のAPI（後方互換性のため保持）
-	firebaseAuth: (action: string, data?: Record<string, unknown>) =>
-		ipcRenderer.invoke("firebase:auth", action, data),
-	firebaseStore: (action: string, data?: Record<string, unknown>) =>
-		ipcRenderer.invoke("firebase:store", action, data),
 
 	// ファイル関連のAPI
 	selectFile: () => ipcRenderer.invoke("select-file"),

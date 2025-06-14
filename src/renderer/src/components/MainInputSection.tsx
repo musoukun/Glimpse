@@ -110,7 +110,7 @@ export const MainInputSection: React.FC<MainInputSectionProps> = ({
 					value={message}
 					onChange={(e) => setMessage(e.target.value)}
 					onKeyDown={handleKeyDown}
-					placeholder="メッセージを入力... (Ctrl+V: 画像貼り付け, Enter: 送信, Shift+Enter: 改行)"
+					placeholder="メッセージを入力&#10;Ctrl+V: 画像貼り付け&#10;Enter: 送信&#10;Shift+Enter: 改行"
 					className="message-input"
 					disabled={disabled}
 					style={{
@@ -134,16 +134,20 @@ export const MainInputSection: React.FC<MainInputSectionProps> = ({
 									};
 									// 親コンポーネントに渡されたaddAttachmentメソッドを直接呼び出すことができないため、
 									// 一時的にローカルストレージ経由でイベントを発火
-									window.dispatchEvent(new CustomEvent('capture-complete', { 
-										detail: attachment 
-									}));
+									window.dispatchEvent(
+										new CustomEvent("capture-complete", {
+											detail: attachment,
+										})
+									);
 								}
 							}
 						}}
 						disabled={disabled || !canAddMore}
 						className="input-button"
 						title={
-							canAddMore ? "画面をキャプチャ" : "添付は最大4枚まで"
+							canAddMore
+								? "画面をキャプチャ"
+								: "添付は最大4枚まで"
 						}
 					>
 						<Crop size={16} />
