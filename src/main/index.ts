@@ -16,6 +16,7 @@ import { electronApp, optimizer, is } from "@electron-toolkit/utils";
 import { readFileSync, writeFileSync } from "fs";
 import { tmpdir } from "os";
 import Store from 'electron-store';
+import { setupAutoUpdater } from './updater';
 
 // OAuth認証のコールバックを処理するための変数
 let mainWindow: BrowserWindow | null = null;
@@ -109,6 +110,10 @@ function createWindow(): void {
 }
 
 
+
+// キャッシュパスの問題を解決
+app.commandLine.appendSwitch('disable-gpu-sandbox');
+app.commandLine.appendSwitch('disable-software-rasterizer');
 
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
@@ -580,6 +585,11 @@ app.whenReady().then(() => {
 	});
 
 	createWindow();
+
+	// 自動更新機能をセットアップ
+	if (mainWindow) {
+		setupAutoUpdater(mainWindow);
+	}
 
 	// タスクトレイを作成
 	const iconPath = join(__dirname, '../../public/glimpse-icon3.png');

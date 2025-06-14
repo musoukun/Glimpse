@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { MainHeader } from "../components/MainHeader";
 import { MainInputSection } from "../components/MainInputSection";
 import { MainResponseSection } from "../components/MainResponseSection";
+import { AnswerModeToggle } from "../components/AnswerModeToggle";
 import SettingsModal from "../components/SettingsModal";
 import { AuthLayout } from "./AuthLayout";
 import { useAttachments } from "../hooks/useAttachments";
@@ -205,6 +206,14 @@ export const AppLayout: React.FC = () => {
 					/>
 				</div>
 			</main>
+
+			{/* フッター（Answer Mode Toggle） */}
+			<footer className="app-footer">
+				<AnswerModeToggle
+					enabled={answerMode}
+					onChange={handleAnswerModeChange}
+				/>
+			</footer>
 
 			{/* 設定モーダル */}
 			<SettingsModal

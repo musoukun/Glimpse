@@ -124,9 +124,9 @@ export const useAuth = () => {
 			Logger.info('AUTH', 'OAuth URL取得成功', { url: data.url })
 
 			// Electron APIを使用してOAuth認証ウィンドウを開く
-			if (window.api?.openOAuthWindow) {
-				const result = await window.api.openOAuthWindow(data.url)
-				if (result.success && result.session) {
+			if (window.api?.openAuthWindow) {
+				const result = await window.api.openAuthWindow(data.url)
+				if (!result.error && 'session' in result && result.session) {
 					Logger.info('AUTH', 'Google認証成功', { userId: result.session.user?.id })
 					
 					// トークンを使用してSupabaseセッションを設定

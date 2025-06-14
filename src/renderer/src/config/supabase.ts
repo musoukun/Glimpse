@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/ban-ts-comment */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { createClient } from "@supabase/supabase-js";
 
 // Supabase設定（環境変数から取得）
@@ -7,6 +9,36 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 // デバッグ情報
 console.log('Supabase初期化:', { supabaseUrl, hasAnonKey: !!supabaseAnonKey });
 
+// カスタムストレージアダプター（Electron環境でのセッション永続化）
+const customStorage = {
+	getItem: (key: string) => {
+		try {
+			const value = window.localStorage.getItem(key);
+			console.log(`Storage get: ${key}`, value ? 'found' : 'not found');
+			return value;
+		} catch (error) {
+			console.error('Storage get error:', error);
+			return null;
+		}
+	},
+	setItem: (key: string, value: string) => {
+		try {
+			window.localStorage.setItem(key, value);
+			console.log(`Storage set: ${key}`, 'success');
+		} catch (error) {
+			console.error('Storage set error:', error);
+		}
+	},
+	removeItem: (key: string) => {
+		try {
+			window.localStorage.removeItem(key);
+			console.log(`Storage remove: ${key}`, 'success');
+		} catch (error) {
+			console.error('Storage remove error:', error);
+		}
+	},
+};
+
 // Supabaseクライアントを作成
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 	auth: {
@@ -15,15 +47,20 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 		detectSessionInUrl: true,
 		// Electronでのリダイレクト対応
 		flowType: 'pkce',
-		storage: window.localStorage,
+		storage: customStorage,
+		storageKey: 'glimpse-auth',
 	},
 });
 
 // Electron環境でのOAuth認証コールバック処理
 if (window.electron && window.api) {
 	// メインプロセスからのコールバックを受信
-	window.electron.ipcRenderer.on('auth:callback', async (event, url) => {
-		console.log('Received auth callback:', url);
+	// NOTE: ElectronのIPCイベントリスナーの処理
+	// @ts-ignore - Electron APIの型定義の問題を回避
+	const ipcOn = window.electron?.on || window.electron?.ipcRenderer?.on;
+	if (ipcOn) {
+		ipcOn('auth:callback', async (_event: any, url: string) => {
+			console.log('Received auth callback:', url);
 		
 		try {
 			// URLからアクセストークンを抽出
@@ -47,7 +84,8 @@ if (window.electron && window.api) {
 		} catch (error) {
 			console.error('Auth callback error:', error);
 		}
-	});
+		});
+	}
 }
 
 // 型定義

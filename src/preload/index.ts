@@ -41,6 +41,41 @@ const api = {
 	resizeWindow: (size: string) => ipcRenderer.invoke("window:resize", size),
 	toggleWindowVisibility: () =>
 		ipcRenderer.invoke("window:toggle-visibility"),
+		
+	// 更新関連のAPI
+	checkForUpdate: () => ipcRenderer.invoke("update:check"),
+	downloadUpdate: () => ipcRenderer.invoke("update:download"),
+	installUpdate: () => ipcRenderer.invoke("update:install"),
+	
+	// 更新イベントのリスナー
+	onUpdateChecking: (callback: () => void) => {
+		ipcRenderer.on("update:checking", callback);
+	},
+	onUpdateAvailable: (callback: (info: any) => void) => {
+		ipcRenderer.on("update:available", (_event, info) => callback(info));
+	},
+	onUpdateNotAvailable: (callback: () => void) => {
+		ipcRenderer.on("update:not-available", callback);
+	},
+	onUpdateDownloadProgress: (callback: (progress: any) => void) => {
+		ipcRenderer.on("update:download-progress", (_event, progress) => callback(progress));
+	},
+	onUpdateDownloaded: (callback: () => void) => {
+		ipcRenderer.on("update:downloaded", callback);
+	},
+	onUpdateError: (callback: (error: string) => void) => {
+		ipcRenderer.on("update:error", (_event, error) => callback(error));
+	},
+	
+	// リスナーの削除
+	removeAllUpdateListeners: () => {
+		ipcRenderer.removeAllListeners("update:checking");
+		ipcRenderer.removeAllListeners("update:available");
+		ipcRenderer.removeAllListeners("update:not-available");
+		ipcRenderer.removeAllListeners("update:download-progress");
+		ipcRenderer.removeAllListeners("update:downloaded");
+		ipcRenderer.removeAllListeners("update:error");
+	},
 };
 
 console.log("Preload: Starting API exposure");

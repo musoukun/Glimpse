@@ -1,7 +1,6 @@
 import React from "react";
 import type { Message } from "../types";
 import { NotificationCard } from "./NotificationCard";
-import { AnswerModeToggle } from "./AnswerModeToggle";
 
 interface MainResponseSectionProps {
 	messages: Message[];
@@ -20,13 +19,17 @@ interface MainResponseSectionProps {
 	onStudyModeChange?: (enabled: boolean) => void;
 }
 
+// 連続する改行を2つまでに制限する関数
+const formatMessageContent = (content: string): string => {
+	// 3つ以上の改行を2つの改行に置換
+	return content.replace(/\n{3,}/g, "\n\n");
+};
+
 export const MainResponseSection: React.FC<MainResponseSectionProps> = ({
 	messages,
 	loading = false,
 	notification,
 	onNotificationClose,
-	studyMode = false,
-	onStudyModeChange,
 }) => {
 	// 設定からフォントサイズを取得
 	const [fontSize, setFontSize] = React.useState(12);
@@ -105,7 +108,9 @@ export const MainResponseSection: React.FC<MainResponseSectionProps> = ({
 													fontSize: `${fontSize}px`,
 												}}
 											>
-												{message.content}
+												{formatMessageContent(
+													message.content
+												)}
 											</div>
 										</div>
 									))}
@@ -115,20 +120,13 @@ export const MainResponseSection: React.FC<MainResponseSectionProps> = ({
 								<p>
 									質問してください。<p></p>-
 									画像だけでも質問できます<p></p>-
-									Web検索し即座に回答します
+									Web検索し回答します
 								</p>
 							</div>
 						) : null}
 					</>
 				)}
 			</div>
-			{/* Answer Mode Toggle */}
-			{onStudyModeChange && (
-				<AnswerModeToggle
-					enabled={studyMode}
-					onChange={onStudyModeChange}
-				/>
-			)}
 		</div>
 	);
 };

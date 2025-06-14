@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // Electron APIの型定義
 export interface ElectronAPI {
 	closeApp: () => void;
@@ -18,7 +19,10 @@ export interface IApi {
 	setSettings: (settings: Record<string, unknown>) => Promise<void>
 	
 	// Supabase Auth関連
-	openAuthWindow: (provider: string) => Promise<{ error: any | null }>
+	openAuthWindow: (provider: string) => Promise<{
+		success: any;
+		session: any; error: any | null 
+}>
 	authSuccess: (authData: any) => Promise<boolean>
 	authSignOut: () => Promise<boolean>
 	
@@ -51,6 +55,35 @@ export interface IApi {
 	closeWindow: () => Promise<void>
 	resizeWindow: (size: string) => Promise<boolean>
 	toggleWindowVisibility: () => Promise<void>
+	
+	// 更新関連
+	checkForUpdate: () => Promise<{ success: boolean; data?: any; error?: string }>
+	downloadUpdate: () => Promise<{ success: boolean; error?: string }>
+	installUpdate: () => Promise<{ success: boolean; restart: boolean; error?: string }>
+	
+	// 更新イベントのリスナー
+	onUpdateChecking: (callback: () => void) => void
+	onUpdateAvailable: (callback: (info: UpdateInfo) => void) => void
+	onUpdateNotAvailable: (callback: () => void) => void
+	onUpdateDownloadProgress: (callback: (progress: UpdateProgress) => void) => void
+	onUpdateDownloaded: (callback: () => void) => void
+	onUpdateError: (callback: (error: string) => void) => void
+	
+	// リスナーの削除
+	removeAllUpdateListeners: () => void
+}
+
+export interface UpdateInfo {
+	version: string
+	releaseDate: string
+	releaseNotes?: string
+}
+
+export interface UpdateProgress {
+	bytesPerSecond: number
+	percent: number
+	transferred: number
+	total: number
 }
 
 declare global {

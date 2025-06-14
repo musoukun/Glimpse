@@ -9,6 +9,10 @@ interface Toast {
 export const useErrorToast = () => {
 	const [toasts, setToasts] = useState<Toast[]>([]);
 
+	const removeToast = useCallback((id: string) => {
+		setToasts((prev) => prev.filter((toast) => toast.id !== id));
+	}, []);
+
 	const showError = useCallback((message: string) => {
 		const id = Date.now().toString();
 		const newToast: Toast = {
@@ -23,11 +27,7 @@ export const useErrorToast = () => {
 		setTimeout(() => {
 			removeToast(id);
 		}, 5000);
-	}, []);
-
-	const removeToast = useCallback((id: string) => {
-		setToasts((prev) => prev.filter((toast) => toast.id !== id));
-	}, []);
+	}, [removeToast]);
 
 	const clearAllToasts = useCallback(() => {
 		setToasts([]);

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
-import { X } from "lucide-react";
+import { X, Download, RefreshCw, CheckCircle, AlertCircle } from "lucide-react";
 import { useUsage } from "../hooks/useUsage";
+import { useUpdater } from "../hooks/useUpdater";
 
 interface SettingsModalProps {
 	isOpen: boolean;
@@ -360,6 +361,9 @@ function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 									</small>
 								</div>
 							</div>
+
+							{/* アップデート設定 */}
+							<UpdateSection />
 						</>
 					)}
 				</div>
@@ -381,6 +385,125 @@ function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 					</button>
 				</div>
 			</div>
+		</div>
+	);
+}
+
+// アップデートセクションコンポーネント
+function UpdateSection() {
+	const { updateState, checkForUpdate, downloadUpdate, installUpdate, isChecking } = useUpdater();
+	const [currentVersion, setCurrentVersion] = useState<string>('');
+
+	useEffect(() => {
+		// package.jsonからバージョンを取得するか、デフォルト値を使用
+		setCurrentVersion('0.1.0'); // TODO: 実際のバージョンを取得
+	}, []);
+
+	const handleCheckUpdate = async () => {
+		await checkForUpdate();
+	};
+
+	const handleDownloadUpdate = async () => {
+		await downloadUpdate();
+	};
+
+	const handleInstallUpdate = async () => {
+		const result = await installUpdate();
+		if (result && 'restart' in result && result.restart) {
+			// アプリが再起動される
+		}
+	};
+
+	return (
+		<div className="settings-section">
+			<h3>アップデート</h3>
+			
+			<div className="form-group">
+				<label>現在のバージョン: {currentVersion}</label>
+			</div>
+
+			{updateState.status === 'idle' && (
+				<div className="form-group">
+					<button
+						className="update-check-button"
+						onClick={handleCheckUpdate}
+						disabled={isChecking}
+					>
+						<RefreshCw size={14} className={isChecking ? 'spinning' : ''} />
+						{isChecking ? 'チェック中...' : 'アップデートを確認'}
+					</button>
+				</div>
+			)}
+
+			{updateState.status === 'checking' && (
+				<div className="form-group">
+					<p className="update-status">
+						<RefreshCw size={14} className="spinning" />
+						アップデートを確認中...
+					</p>
+				</div>
+			)}
+
+			{updateState.status === 'available' && updateState.updateInfo && (
+				<div className="form-group update-available">
+					<p className="update-info">
+						<AlertCircle size={14} />
+						新しいバージョン {updateState.updateInfo.version} が利用可能です
+					</p>
+					{updateState.updateInfo.releaseNotes && (
+						<div className="release-notes">
+							<small>{updateState.updateInfo.releaseNotes}</small>
+						</div>
+					)}
+					<button
+						className="download-button"
+						onClick={handleDownloadUpdate}
+					>
+						<Download size={14} />
+						ダウンロード
+					</button>
+				</div>
+			)}
+
+			{updateState.status === 'downloading' && updateState.downloadProgress && (
+				<div className="form-group">
+					<p className="update-status">
+						<Download size={14} className="downloading" />
+						ダウンロード中... {Math.round(updateState.downloadProgress.percent)}%
+					</p>
+					<div className="progress-bar">
+						<div 
+							className="progress-fill" 
+							style={{ width: `${updateState.downloadProgress.percent}%` }}
+						/>
+					</div>
+				</div>
+			)}
+
+			{updateState.status === 'downloaded' && (
+				<div className="form-group update-ready">
+					<p className="update-info">
+						<CheckCircle size={14} />
+						ダウンロード完了！インストールの準備ができました
+					</p>
+					<button
+						className="install-button"
+						onClick={handleInstallUpdate}
+					>
+						<RefreshCw size={14} />
+						今すぐ再起動してインストール
+					</button>
+				</div>
+			)}
+
+			{updateState.status === 'error' && updateState.error && (
+				<div className="form-group update-error">
+					<p className="error-message">
+						<AlertCircle size={14} />
+						エラー: {updateState.error}
+					</p>
+				</div>
+			)}
 		</div>
 	);
 }
