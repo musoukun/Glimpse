@@ -1,0 +1,482 @@
+import {
+	app,
+	shell,
+	BrowserWindow,
+	ipcMain,
+	dialog,
+	desktopCapturer,
+	globalShortcut,
+} from "electron";
+import { join } from "path";
+import { electronApp, optimizer, is } from "@electron-toolkit/utils";
+import { readFileSync } from "fs";
+
+// OAuth認証のコールバックを処理するための変数
+let mainWindow: BrowserWindow | null = null;
+
+function createWindow(): void {
+	// Create the browser window.
+	mainWindow = new BrowserWindow({
+		width: 280,
+		height: 400,
+		show: false,
+		autoHideMenuBar: true,
+		frame: false, // フレームレスウィンドウ
+		resizable: true, // サイズ変更を有効化
+		transparent: true, // ウィンドウ透明化
+		backgroundColor: "#00000000", // 完全透明背景
+		maximizable: false, // 最大化を無効化
+		minimizable: true, // 最小化を有効化
+		alwaysOnTop: false, // 常に最前面を無効化
+		skipTaskbar: false, // タスクバーに表示
+		webPreferences: {
+			preload: join(__dirname, "../preload/index.js"),
+			sandbox: false,
+			contextIsolation: true,
+			nodeIntegration: false,
+			webSecurity: false, // Firebase認証のポップアップを許可
+		},
+	});
+
+	mainWindow.on("ready-to-show", () => {
+		mainWindow?.show();
+	});
+
+	mainWindow.webContents.setWindowOpenHandler((details) => {
+		// Firebase認証のポップアップを許可
+		if (details.url.includes('accounts.google.com') || details.url.includes('firebase')) {
+			return { action: "allow" };
+		}
+		// その他の外部URLは外部ブラウザで開く
+		shell.openExternal(details.url);
+		return { action: "deny" };
+	});
+
+	// HMR for renderer base on electron-vite cli.
+	// Load the remote URL for development or the local html file for production.
+	if (is.dev && process.env["ELECTRON_RENDERER_URL"]) {
+		mainWindow.loadURL(process.env["ELECTRON_RENDERER_URL"]);
+	} else {
+		mainWindow.loadFile(join(__dirname, "../renderer/index.html"));
+	}
+}
+
+// Firebase OAuth認証ウィンドウを開く関数
+async function createFirebaseOAuthWindow(): Promise<{ success: boolean; user?: { uid: string; email: string | null; displayName: string | null }; error?: string }> {
+	return new Promise((resolve) => {
+		// Firebase OAuth認証用のウィンドウを作成
+		const authWindow = new BrowserWindow({
+			width: 500,
+			height: 600,
+			show: true,
+			modal: true,
+			parent: mainWindow || undefined,
+			webPreferences: {
+				nodeIntegration: false,
+				contextIsolation: true,
+			},
+		});
+
+		// Firebase OAuth URLを構築（正しいGoogle OAuth URL）
+		// 注意: 実際のGoogle Client IDを設定する必要があります
+		const clientId = '288565820334-xxxxxxxxxxxxxxxxxxxxxxxxxx.apps.googleusercontent.com'; // Google Cloud Consoleから取得したClient ID
+		const redirectUri = 'https://glimpse-dfe44.firebaseapp.com/__/auth/handler';
+		const firebaseOAuthUrl = `https://accounts.google.com/o/oauth2/auth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=openid%20email%20profile&state=firebase-auth`;
+
+		console.log('Firebase OAuth URL:', firebaseOAuthUrl);
+
+		// Firebase OAuth認証ページを読み込み
+		authWindow.loadURL(firebaseOAuthUrl);
+
+		// URLの変更を監視してコールバックを処理
+		authWindow.webContents.on('will-navigate', (event, url) => {
+			handleFirebaseAuthCallback(url, authWindow, resolve);
+		});
+
+		authWindow.webContents.on('did-navigate', (event, url) => {
+			handleFirebaseAuthCallback(url, authWindow, resolve);
+		});
+
+		// ウィンドウが閉じられた場合の処理
+		authWindow.on('closed', () => {
+			resolve({ success: false, error: 'ユーザーによって認証がキャンセルされました' });
+		});
+	});
+}
+
+// OAuth認証ウィンドウを開く関数
+async function createOAuthWindow(oauthUrl: string): Promise<{ success: boolean; session?: { access_token: string; refresh_token: string | null; user: { id: string } }; error?: string }> {
+	return new Promise((resolve) => {
+		// OAuth認証用のウィンドウを作成
+		const authWindow = new BrowserWindow({
+			width: 500,
+			height: 600,
+			show: true,
+			modal: true,
+			parent: mainWindow || undefined,
+			webPreferences: {
+				nodeIntegration: false,
+				contextIsolation: true,
+			},
+		});
+
+		console.log('OAuth URL:', oauthUrl);
+
+		// OAuth認証ページを読み込み
+		authWindow.loadURL(oauthUrl);
+
+		// ウィンドウが閉じられた時の処理
+		authWindow.on('closed', () => {
+			resolve({ success: false, error: 'ユーザーによって認証がキャンセルされました' });
+		});
+
+		// ページの変更を監視
+		authWindow.webContents.on('will-redirect', (event, navigationUrl) => {
+			console.log('Redirect detected:', navigationUrl);
+			handleAuthCallback(navigationUrl, authWindow, resolve);
+		});
+
+		authWindow.webContents.on('did-navigate', (event, navigationUrl) => {
+			console.log('Navigation detected:', navigationUrl);
+			handleAuthCallback(navigationUrl, authWindow, resolve);
+		});
+	});
+}
+
+// Firebase認証コールバックを処理する関数
+function handleFirebaseAuthCallback(
+	url: string, 
+	authWindow: BrowserWindow, 
+	resolve: (value: { success: boolean; user?: { uid: string; email: string | null; displayName: string | null }; error?: string }) => void
+) {
+	console.log('Firebase callback URL:', url);
+
+	// Firebase認証の成功を検出（認証コードを取得）
+	if (url.includes('glimpse-dfe44.firebaseapp.com') && url.includes('code=')) {
+		try {
+			// URLから認証コードを抽出
+			const urlParams = new URLSearchParams(url.split('?')[1]);
+			const code = urlParams.get('code');
+			const state = urlParams.get('state');
+
+			if (code && state === 'firebase-auth') {
+				console.log('Firebase認証コード取得成功:', { code: code.substring(0, 10) + '...' });
+				
+				// 認証コードを使用してFirebaseトークンを取得
+				// 実際の実装では、ここでFirebase Auth REST APIを呼び出してトークンを取得します
+				const user = {
+					uid: 'firebase-user-' + Date.now(),
+					email: 'user@example.com',
+					displayName: 'Firebase User'
+				};
+
+				authWindow.close();
+				resolve({ success: true, user });
+				return;
+			}
+		} catch (error) {
+			console.error('Firebase認証コード処理エラー:', error);
+		}
+	}
+
+	// エラーの検出
+	if (url.includes('error')) {
+		const urlParams = new URLSearchParams(url.split('?')[1]);
+		const error = urlParams.get('error') || 'Firebase認証エラー';
+		console.error('Firebase認証エラー:', error);
+		authWindow.close();
+		resolve({ success: false, error });
+	}
+}
+
+// OAuth認証コールバックを処理する関数
+function handleAuthCallback(
+	url: string, 
+	authWindow: BrowserWindow, 
+	resolve: (value: { success: boolean; session?: { access_token: string; refresh_token: string | null; user: { id: string } }; error?: string }) => void
+) {
+	// コールバックURLかどうかをチェック
+	if (url.includes('/auth/v1/callback') || url.includes('access_token=')) {
+		console.log('OAuth callback detected:', url);
+		
+		try {
+			// URLからトークンを抽出
+			const urlObj = new URL(url.replace('#', '?'));
+			const accessToken = urlObj.searchParams.get('access_token');
+			const refreshToken = urlObj.searchParams.get('refresh_token');
+			const error = urlObj.searchParams.get('error');
+			const errorDescription = urlObj.searchParams.get('error_description');
+
+			if (error) {
+				authWindow.close();
+				resolve({ success: false, error: `OAuth認証エラー: ${error} - ${errorDescription}` });
+				return;
+			}
+
+			if (accessToken) {
+				// 認証成功
+				const session = {
+					access_token: accessToken,
+					refresh_token: refreshToken,
+					user: { id: 'temp-user-id' } // 実際のユーザー情報は後で取得
+				};
+
+				authWindow.close();
+				resolve({ success: true, session });
+				return;
+			}
+		} catch (error) {
+			console.error('OAuth callback processing error:', error);
+			authWindow.close();
+			resolve({ success: false, error: 'OAuth認証の処理中にエラーが発生しました' });
+		}
+	}
+}
+
+// This method will be called when Electron has finished
+// initialization and is ready to create browser windows.
+// Some APIs can only be used after this event occurs.
+app.whenReady().then(() => {
+	// Set app user model id for windows
+	electronApp.setAppUserModelId("com.electron");
+
+	// Default open or close DevTools by F12 in development
+	// and ignore CommandOrControl + R in production.
+	// see https://github.com/alex8088/electron-toolkit/tree/master/packages/utils
+	app.on("browser-window-created", (_, window) => {
+		optimizer.watchWindowShortcuts(window);
+	});
+
+	// IPC test
+	ipcMain.handle("ping", () => "pong");
+
+	// OAuth認証ウィンドウを開くIPCハンドラー
+	ipcMain.handle('oauth:open-window', async (event, oauthUrl: string) => {
+		try {
+			console.log('OAuth window opening with URL:', oauthUrl);
+			const result = await createOAuthWindow(oauthUrl);
+			console.log('OAuth result:', result);
+			return result;
+		} catch (error) {
+			console.error('OAuth window error:', error);
+			return { success: false, error: 'OAuth認証ウィンドウの作成に失敗しました' };
+		}
+	});
+
+	// Firebase OAuth認証ウィンドウを開くIPCハンドラー
+	ipcMain.handle('firebase:oauth-window', async () => {
+		try {
+			console.log('Firebase OAuth window opening...');
+			const result = await createFirebaseOAuthWindow();
+			console.log('Firebase OAuth result:', result);
+			return result;
+		} catch (error) {
+			console.error('Firebase OAuth window error:', error);
+			return { success: false, error: 'Firebase OAuth認証ウィンドウの作成に失敗しました' };
+		}
+	});
+
+	// 外部URLを開くIPCハンドラー
+	ipcMain.handle("oauth:open-external", async (event, url: string) => {
+		try {
+			await shell.openExternal(url);
+			return true;
+		} catch (error) {
+			console.error("外部URL起動エラー:", error);
+			return false;
+		}
+	});
+
+	// ファイル選択IPCハンドラー
+	ipcMain.handle("file:select", async (event) => {
+		const window = BrowserWindow.fromWebContents(event.sender);
+		if (!window) return null;
+
+		try {
+			const result = await dialog.showOpenDialog(window, {
+				title: "ファイルを選択",
+				properties: ["openFile"],
+				filters: [
+					{
+						name: "画像ファイル",
+						extensions: [
+							"jpg",
+							"jpeg",
+							"png",
+							"gif",
+							"webp",
+							"svg",
+						],
+					},
+					{
+						name: "テキストファイル",
+						extensions: [
+							"txt",
+							"md",
+							"json",
+							"js",
+							"ts",
+							"tsx",
+							"jsx",
+							"css",
+							"html",
+						],
+					},
+					{
+						name: "全てのファイル",
+						extensions: ["*"],
+					},
+				],
+			});
+
+			if (result.canceled || result.filePaths.length === 0) {
+				return null;
+			}
+
+			const filePath = result.filePaths[0];
+			const fileName = filePath.split(/[\\/]/).pop() || "unknown";
+
+			// ファイルを読み込んでBase64エンコード
+			const fileBuffer = readFileSync(filePath);
+			const mimeType = getMimeType(fileName);
+			const fileData = `data:${mimeType};base64,${fileBuffer.toString("base64")}`;
+
+			return {
+				fileName,
+				fileData,
+				fileSize: fileBuffer.length,
+				mimeType,
+			};
+		} catch (error) {
+			console.error("ファイル選択エラー:", error);
+			return null;
+		}
+	});
+
+	// スクリーンショット機能のハンドラー
+	ipcMain.handle("take-screenshot", async () => {
+		try {
+			// デスクトップキャプチャのソースを取得
+			const sources = await desktopCapturer.getSources({
+				types: ["screen"],
+				thumbnailSize: { width: 1920, height: 1080 },
+			});
+
+			if (sources.length === 0) {
+				throw new Error("スクリーンソースが見つかりません");
+			}
+
+			// プライマリスクリーンを取得（最初のスクリーン）
+			const primaryScreen = sources[0];
+			const thumbnail = primaryScreen.thumbnail;
+
+			// NativeImageをPNGバッファに変換
+			const pngBuffer = thumbnail.toPNG();
+			const base64Data = `data:image/png;base64,${pngBuffer.toString("base64")}`;
+
+			return {
+				fileName: `screenshot-${Date.now()}.png`,
+				fileData: base64Data,
+				fileSize: pngBuffer.length,
+				mimeType: "image/png",
+			};
+		} catch (error) {
+			console.error("スクリーンショットエラー:", error);
+			throw error;
+		}
+	});
+
+	// MIMEタイプを推定する関数
+	function getMimeType(fileName: string): string {
+		const ext = fileName.split(".").pop()?.toLowerCase() || "";
+		const mimeTypes: Record<string, string> = {
+			// 画像
+			jpg: "image/jpeg",
+			jpeg: "image/jpeg",
+			png: "image/png",
+			gif: "image/gif",
+			webp: "image/webp",
+			svg: "image/svg+xml",
+			// テキスト
+			txt: "text/plain",
+			md: "text/markdown",
+			json: "application/json",
+			js: "text/javascript",
+			ts: "text/typescript",
+			tsx: "text/typescript",
+			jsx: "text/javascript",
+			css: "text/css",
+			html: "text/html",
+			// デフォルト
+		};
+		return mimeTypes[ext] || "application/octet-stream";
+	}
+
+	// ウィンドウサイズ変更のIPCハンドラー
+	ipcMain.handle("window:resize", async (event, size: string) => {
+		const window = BrowserWindow.fromWebContents(event.sender);
+		if (!window) return false;
+
+		let width: number, height: number;
+		switch (size) {
+			case "small":
+				width = 280;
+				height = 400;
+				break;
+			case "medium":
+				width = 320;
+				height = 450;
+				break;
+			case "large":
+				width = 360;
+				height = 500;
+				break;
+			default:
+				return false;
+		}
+
+		window.setSize(width, height);
+		console.log(`ウィンドウサイズを${size}(${width}x${height})に変更`);
+		return true;
+	});
+
+	// ウィンドウを閉じるIPCハンドラー
+	ipcMain.handle("window:close", async (event) => {
+		const window = BrowserWindow.fromWebContents(event.sender);
+		if (!window) return;
+		window.close();
+	});
+
+	// ウィンドウ表示/非表示切り替えIPCハンドラー
+	ipcMain.handle("window:toggle-visibility", async (event) => {
+		const window = BrowserWindow.fromWebContents(event.sender);
+		if (!window) return;
+
+		if (window.isVisible()) {
+			window.hide();
+		} else {
+			window.show();
+			window.focus();
+		}
+	});
+
+	createWindow();
+
+	app.on("activate", function () {
+		// On macOS it's common to re-create a window in the app when the
+		// dock icon is clicked and there are no other windows open.
+		if (BrowserWindow.getAllWindows().length === 0) createWindow();
+	});
+});
+
+// Quit when all windows are closed, except on macOS. There, it's common
+// for applications and their menu bar to stay active until the user quits
+// explicitly with Cmd + Q.
+app.on("window-all-closed", () => {
+	if (process.platform !== "darwin") {
+		app.quit();
+	}
+});
+
+// In this file you can include the rest of your app"s main process
+// code. You can also put them in separate files and require them here.
