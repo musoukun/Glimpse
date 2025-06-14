@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { X } from "lucide-react";
+import { useUsage } from "../hooks/useUsage";
 
 interface SettingsModalProps {
 	isOpen: boolean;
@@ -15,6 +16,7 @@ interface AppSettings {
 		max_characters: number;
 		response_language: string;
 		user_prompt: string;
+		font_size: number;
 	};
 }
 
@@ -23,6 +25,7 @@ function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 	const [loading, setLoading] = useState(false);
 	const [saving, setSaving] = useState(false);
 	const [error, setError] = useState("");
+	const { getRemainingCalls, usage } = useUsage();
 
 	useEffect(() => {
 		if (isOpen) {
@@ -162,6 +165,19 @@ function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 
 					{settings && (
 						<>
+							{/* 使用状況 */}
+							<div className="usage-info" style={{
+								padding: '12px 16px',
+								marginBottom: '20px',
+								background: 'rgba(255, 255, 255, 0.1)',
+								border: '1px solid rgba(255, 255, 255, 0.2)',
+								borderRadius: '6px',
+								fontSize: '14px',
+								color: 'rgba(255, 255, 255, 0.9)'
+							}}>
+								今月の残り質問回数: <strong style={{ color: 'white' }}>{usage ? getRemainingCalls() : '...'}回</strong>
+							</div>
+
 							{/* UI設定 */}
 							<div className="settings-section">
 								<h3>UI設定</h3>
@@ -282,6 +298,35 @@ function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 									/>
 									<small>
 										ここに入力した内容がシステムプロンプトの末尾に追加されます
+									</small>
+								</div>
+
+								<div className="form-group">
+									<label>
+										文字サイズ:
+										{
+											settings.response_settings
+												.font_size || 14
+										}px
+									</label>
+									<input
+										type="range"
+										min="10"
+										max="20"
+										step="1"
+										value={
+											settings.response_settings
+												.font_size || 14
+										}
+										onChange={(e) =>
+											updateResponseSetting(
+												"font_size",
+												parseInt(e.target.value)
+											)
+										}
+									/>
+									<small>
+										AIの回答の文字サイズを調整します
 									</small>
 								</div>
 							</div>

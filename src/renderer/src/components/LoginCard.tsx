@@ -8,7 +8,7 @@ interface LoginCardProps {
 	loading?: boolean;
 }
 
-export function LoginCard({
+function LoginCard({
 	onEmailLogin,
 	onGoogleLogin,
 	loading = false,
@@ -161,3 +161,5 @@ export function LoginCard({
 		</div>
 	);
 }
+
+export default LoginCard;
