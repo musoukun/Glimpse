@@ -76,15 +76,27 @@ class SupabaseEdgeService {
           console.error('Edge function error:', error)
           console.error('Edge function response:', data)
           
-          // エラーメッセージを詳細に確認
-          let errorMessage = 'サーバーでエラーが発生しました。'
-          if (error.message?.includes('401')) {
-            errorMessage = '認証エラーが発生しました。再度ログインしてください。'
+          // FunctionsHttpErrorの場合、ステータスコードをチェック
+          const errorMessage = error.message || ''
+          const isRateLimitError = errorMessage.includes('429') || 
+                                  errorMessage.includes('non-2xx status code') ||
+                                  (error as any)?.status === 429
+          
+          if (isRateLimitError) {
+            return {
+              text: '月間使用制限に達しました。',
+              error: '月間使用制限に達しました。'
+            }
+          } else if (errorMessage.includes('401')) {
+            return {
+              text: '認証エラーが発生しました。再度ログインしてください。',
+              error: errorMessage
+            }
           }
           
           return {
-            text: errorMessage,
-            error: error.message
+            text: 'サーバーでエラーが発生しました。',
+            error: errorMessage
           }
         }
 
@@ -100,9 +112,9 @@ class SupabaseEdgeService {
 
         if (data.error) {
           // サーバーサイドエラーの処理
-          if (data.error.includes('制限')) {
+          if (data.error.includes('制限') || data.error.includes('limit') || data.error.includes('429')) {
             return {
-              text: data.error,
+              text: '月間使用制限に達しました。',
               error: data.error
             }
           }

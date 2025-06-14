@@ -1,7 +1,7 @@
 import React from "react";
 import type { Message } from "../types";
 import { NotificationCard } from "./NotificationCard";
-import { StudyModeToggle } from "./StudyModeToggle";
+import { AnswerModeToggle } from "./AnswerModeToggle";
 
 interface MainResponseSectionProps {
 	messages: Message[];
@@ -29,7 +29,7 @@ export const MainResponseSection: React.FC<MainResponseSectionProps> = ({
 	onStudyModeChange,
 }) => {
 	// 設定からフォントサイズを取得
-	const [fontSize, setFontSize] = React.useState(14);
+	const [fontSize, setFontSize] = React.useState(12);
 
 	React.useEffect(() => {
 		// 初回ロード時に設定を読み込み
@@ -38,7 +38,7 @@ export const MainResponseSection: React.FC<MainResponseSectionProps> = ({
 				const settings = localStorage.getItem('glimpse_settings');
 				if (settings) {
 					const parsed = JSON.parse(settings);
-					const size = parsed.response_settings?.font_size || 14;
+					const size = parsed.response_settings?.font_size || 12;
 					setFontSize(size);
 				}
 			} catch (error) {
@@ -107,9 +107,9 @@ export const MainResponseSection: React.FC<MainResponseSectionProps> = ({
 					</>
 				)}
 			</div>
-			{/* Study Mode Toggle */}
+			{/* Answer Mode Toggle */}
 			{onStudyModeChange && (
-				<StudyModeToggle
+				<AnswerModeToggle
 					enabled={studyMode}
 					onChange={onStudyModeChange}
 				/>

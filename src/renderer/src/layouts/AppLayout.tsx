@@ -14,8 +14,8 @@ export const AppLayout: React.FC = () => {
 	const [messages, setMessages] = useState<Message[]>([]);
 	const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 	const [isThinking, setIsThinking] = useState(false);
-	const [studyMode, setStudyMode] = useState(() => {
-		const saved = localStorage.getItem('glimpse_study_mode');
+	const [answerMode, setAnswerMode] = useState(() => {
+		const saved = localStorage.getItem('glimpse_answer_mode');
 		return saved === 'true';
 	});
 	const [notification, setNotification] = useState<{
@@ -56,10 +56,10 @@ export const AppLayout: React.FC = () => {
 	}, [addAttachmentDirect]);
 
 	// 初回起動時のお知らせをチェック
-	// Study Mode変更時にLocalStorageに保存
-	const handleStudyModeChange = (enabled: boolean) => {
-		setStudyMode(enabled);
-		localStorage.setItem('glimpse_study_mode', enabled.toString());
+	// Answer Mode変更時にLocalStorageに保存
+	const handleAnswerModeChange = (enabled: boolean) => {
+		setAnswerMode(enabled);
+		localStorage.setItem('glimpse_answer_mode', enabled.toString());
 	};
 
 	useEffect(() => {
@@ -107,7 +107,7 @@ export const AppLayout: React.FC = () => {
 		setNotification(null);
 
 		try {
-			const response = await callLLM(finalMessage, attachments, studyMode);
+			const response = await callLLM(finalMessage, attachments, answerMode);
 
 			const assistantMessage: Message = {
 				id: (Date.now() + 1).toString(),
@@ -196,8 +196,8 @@ export const AppLayout: React.FC = () => {
 						loading={llmLoading || isThinking}
 						notification={notification}
 						onNotificationClose={() => setNotification(null)}
-						studyMode={studyMode}
-						onStudyModeChange={handleStudyModeChange}
+						studyMode={answerMode}
+						onStudyModeChange={handleAnswerModeChange}
 					/>
 				</div>
 			</main>

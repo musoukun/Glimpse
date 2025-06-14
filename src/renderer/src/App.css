@@ -1766,8 +1766,8 @@ body {
   border-color: rgba(168, 85, 247, 0.5);
 }
 
-/* Study Mode Toggle */
-.study-mode-toggle {
+/* Answer Mode Toggle */
+.answer-mode-toggle {
   position: absolute;
   bottom: 8px;
   right: 8px;

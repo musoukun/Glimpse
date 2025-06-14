@@ -21,22 +21,28 @@ class AILogicService {
     });
   }
 
-  private updateSystemPrompt(studyMode: boolean = false) {
+  private updateSystemPrompt(answerMode: boolean = false) {
     const settings = this.getSettings();
     const maxChars = settings.response_settings?.max_characters || 200;
     const userPrompt = settings.response_settings?.user_prompt || '';
     const language = settings.response_settings?.response_language || '日本語';
 
-    if (studyMode) {
-      this.systemPrompt = `あなたは学習をサポートするAIアシスタントです。
+    if (answerMode) {
+      this.systemPrompt = `あなたはなんでも、質問に対して解答を行うAIアシスタントです。
       以下のルールに従って回答してください：
-      1. 数式や問題が含まれている場合：解答手順を段階的に示し、解答を表示してください
+      1. 数式や問題が含まれている場合：解答手順を段階的に示し、解答を表示してください。
+          - 数式を見て、計算の解答を行うべきか、証明の解答を行うべきかを判断してください。
+          - この処理に流れたときは、Transrationは行わないでください。${language}で回答してください。
       2. 文章が含まれている場合：${language}に翻訳してください
       3. ${language}の文章が含まれている場合：英語に翻訳してください
-      4. 画像に文字が含まれている場合：OCRとして文字を認識し、上記のルールを適用してください
-      5. 回答は${maxChars}文字以内で要約してください
-      6. 必ず${language}で回答してください（翻訳結果を除く）
-      7. Markdown記法は使用せず、改行コードを含む、プレーンテキストで回答してください
+      4. 画像に文字が含まれている場合:OCRとして文字を認識し、上記のルールを適用してください
+      5. 必ず${language}で回答してください（翻訳結果を除く）
+      6. Markdown記法は使用せず、改行コードを含む、プレーンテキストで回答してください（ただし追加の指示で、Markdown記法を指示された場合は従ってください）
+      7. 解答の後に、解説を記載してください。解答は単純かつ結論のみを記載し、解説は解答の理由を要約して記載してください。
+      # 悪い回答例
+      ### 以下は意味をあまり持たない言葉のため不要です
+      - 画像内の数式をOCRで読み取り～
+      - 解説:画像内のテキストをOCRで読み取り、それを日本語に翻訳しました。
       ${userPrompt ? `追加の指示：${userPrompt}` : ''}`;
     } else {
       this.systemPrompt = `あなたは回答を単純化して要約するAIアシスタントです。
@@ -68,14 +74,14 @@ class AILogicService {
   async generateResponse(
     message: string,
     images: string[] = [],
-    studyMode: boolean = false
+    answerMode: boolean = false
   ): Promise<AIResponse> {
     try {
       const settings = this.getSettings();
       const groundingMaxTokens = settings.response_settings?.grounding_max_tokens || 512;
       
-      // Study Modeに応じてシステムプロンプトを更新
-      this.updateSystemPrompt(studyMode);
+      // Answer Modeに応じてシステムプロンプトを更新
+      this.updateSystemPrompt(answerMode);
       
       // システムプロンプトと設定値を渡してsupabaseEdgeServiceを呼び出し
       // グラウンディングは常に有効にする
