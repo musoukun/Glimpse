@@ -166,16 +166,22 @@ function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 					{settings && (
 						<>
 							{/* 使用状況 */}
-							<div className="usage-info" style={{
-								padding: '12px 16px',
-								marginBottom: '20px',
-								background: 'rgba(255, 255, 255, 0.1)',
-								border: '1px solid rgba(255, 255, 255, 0.2)',
-								borderRadius: '6px',
-								fontSize: '14px',
-								color: 'rgba(255, 255, 255, 0.9)'
-							}}>
-								今月の残り質問回数: <strong style={{ color: 'white' }}>{usage ? getRemainingCalls() : '...'}回</strong>
+							<div
+								className="usage-info"
+								style={{
+									padding: "12px 16px",
+									marginBottom: "20px",
+									background: "rgba(255, 255, 255, 0.1)",
+									border: "1px solid rgba(255, 255, 255, 0.2)",
+									borderRadius: "6px",
+									fontSize: "14px",
+									color: "rgba(255, 255, 255, 0.9)",
+								}}
+							>
+								今月の残り質問回数:{" "}
+								<strong style={{ color: "white" }}>
+									{usage ? getRemainingCalls() : "..."}回
+								</strong>
 							</div>
 
 							{/* UI設定 */}
@@ -214,9 +220,9 @@ function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 									</label>
 									<input
 										type="range"
-										min="0.3"
+										min="0.1"
 										max="1.0"
-										step="0.1"
+										step="0.05"
 										value={settings.ui_settings.opacity}
 										onChange={(e) =>
 											updateUiSetting(
@@ -304,10 +310,9 @@ function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 								<div className="form-group">
 									<label>
 										文字サイズ:
-										{
-											settings.response_settings
-												.font_size || 14
-										}px
+										{settings.response_settings.font_size ||
+											14}
+										px
 									</label>
 									<input
 										type="range"

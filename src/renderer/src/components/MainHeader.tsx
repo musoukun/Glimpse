@@ -131,9 +131,9 @@ export const MainHeader: React.FC<MainHeaderProps> = ({ onSettingsClick }) => {
 				<div className="opacity-control">
 					<input
 						type="range"
-						min="0.3"
+						min="0.1"
 						max="1.0"
-						step="0.1"
+						step="0.05"
 						value={opacity}
 						onChange={handleOpacityChange}
 						className="opacity-slider"

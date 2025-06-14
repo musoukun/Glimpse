@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react'
 
 const OPACITY_STORAGE_KEY = 'app-opacity'
 const DEFAULT_OPACITY = 1.0
+const MIN_OPACITY = 0.1
+const MAX_OPACITY = 1.0
 
 export const useOpacity = () => {
   const [opacity, setOpacityState] = useState(DEFAULT_OPACITY)
@@ -12,7 +14,7 @@ export const useOpacity = () => {
       const savedOpacity = localStorage.getItem(OPACITY_STORAGE_KEY)
       if (savedOpacity) {
         const parsedOpacity = parseFloat(savedOpacity)
-        if (!isNaN(parsedOpacity) && parsedOpacity >= 0.3 && parsedOpacity <= 1.0) {
+        if (!isNaN(parsedOpacity) && parsedOpacity >= MIN_OPACITY && parsedOpacity <= MAX_OPACITY) {
           setOpacityState(parsedOpacity)
           updateCSSOpacity(parsedOpacity)
         }
@@ -24,7 +26,7 @@ export const useOpacity = () => {
 
   // 透明度を設定する関数
   const setOpacity = (newOpacity: number) => {
-    const clampedOpacity = Math.max(0.3, Math.min(1.0, newOpacity))
+    const clampedOpacity = Math.max(MIN_OPACITY, Math.min(MAX_OPACITY, newOpacity))
     setOpacityState(clampedOpacity)
     updateCSSOpacity(clampedOpacity)
     
