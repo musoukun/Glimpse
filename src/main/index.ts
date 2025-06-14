@@ -526,6 +526,200 @@ app.whenReady().then(() => {
 		}
 	});
 
+	// 範囲選択キャプチャのIPCハンドラー
+	ipcMain.handle("capture-area", async () => {
+		try {
+			if (!mainWindow) return null;
+
+			// メインウィンドウを一時的に非表示
+			mainWindow.hide();
+
+			// 少し待ってからキャプチャ（ウィンドウが確実に非表示になるため）
+			await new Promise(resolve => setTimeout(resolve, 200));
+
+			// スクリーン全体のキャプチャを取得
+			const sources = await desktopCapturer.getSources({
+				types: ["screen"],
+				thumbnailSize: {
+					width: screen.getPrimaryDisplay().workAreaSize.width,
+					height: screen.getPrimaryDisplay().workAreaSize.height
+				}
+			});
+
+			if (sources.length === 0) {
+				mainWindow.show();
+				throw new Error("スクリーンソースが見つかりません");
+			}
+
+			// 範囲選択ウィンドウを作成
+			const captureWindow = new BrowserWindow({
+				fullscreen: true,
+				frame: false,
+				transparent: true,
+				alwaysOnTop: true,
+				skipTaskbar: true,
+				movable: false,
+				resizable: false,
+				hasShadow: false,
+				webPreferences: {
+					preload: join(__dirname, "../preload/index.mjs"),
+					sandbox: false,
+					contextIsolation: true,
+					nodeIntegration: false,
+				}
+			});
+
+			// キャプチャウィンドウ用のHTMLを読み込む
+			const captureHtml = `
+				<!DOCTYPE html>
+				<html>
+				<head>
+					<style>
+						body {
+							margin: 0;
+							padding: 0;
+							overflow: hidden;
+							cursor: crosshair;
+							background: rgba(0, 0, 0, 0.3);
+						}
+						#selection {
+							position: absolute;
+							border: 2px solid #0099ff;
+							background: rgba(0, 153, 255, 0.1);
+							display: none;
+						}
+						#screenshot {
+							position: absolute;
+							top: 0;
+							left: 0;
+							width: 100%;
+							height: 100%;
+							z-index: -1;
+						}
+					</style>
+				</head>
+				<body>
+					<img id="screenshot" />
+					<div id="selection"></div>
+					<script>
+						let isSelecting = false;
+						let startX, startY, endX, endY;
+						const selection = document.getElementById('selection');
+						const screenshot = document.getElementById('screenshot');
+
+						// スクリーンショットを表示
+						window.addEventListener('message', (event) => {
+							if (event.data.type === 'screenshot') {
+								screenshot.src = event.data.data;
+							}
+						});
+
+						document.addEventListener('mousedown', (e) => {
+							isSelecting = true;
+							startX = e.clientX;
+							startY = e.clientY;
+							selection.style.display = 'block';
+							selection.style.left = startX + 'px';
+							selection.style.top = startY + 'px';
+							selection.style.width = '0px';
+							selection.style.height = '0px';
+						});
+
+						document.addEventListener('mousemove', (e) => {
+							if (!isSelecting) return;
+							endX = e.clientX;
+							endY = e.clientY;
+							const width = Math.abs(endX - startX);
+							const height = Math.abs(endY - startY);
+							selection.style.left = Math.min(startX, endX) + 'px';
+							selection.style.top = Math.min(startY, endY) + 'px';
+							selection.style.width = width + 'px';
+							selection.style.height = height + 'px';
+						});
+
+						document.addEventListener('mouseup', () => {
+							if (!isSelecting) return;
+							isSelecting = false;
+							const rect = {
+								x: Math.min(startX, endX),
+								y: Math.min(startY, endY),
+								width: Math.abs(endX - startX),
+								height: Math.abs(endY - startY)
+							};
+							if (rect.width > 10 && rect.height > 10) {
+								window.electron.ipcRenderer.send('capture-selection', rect);
+							}
+						});
+
+						// ESCキーでキャンセル
+						document.addEventListener('keydown', (e) => {
+							if (e.key === 'Escape') {
+								window.electron.ipcRenderer.send('capture-cancel');
+							}
+						});
+					</script>
+				</body>
+				</html>
+			`;
+
+			// HTMLを一時ファイルとして保存
+			const tempPath = join(tmpdir(), 'capture.html');
+			writeFileSync(tempPath, captureHtml);
+			captureWindow.loadFile(tempPath);
+
+			// スクリーンショットをキャプチャウィンドウに送信
+			captureWindow.webContents.on('did-finish-load', () => {
+				const screenshot = sources[0].thumbnail;
+				const base64Data = `data:image/png;base64,${screenshot.toPNG().toString('base64')}`;
+				captureWindow.webContents.postMessage('screenshot', { type: 'screenshot', data: base64Data });
+			});
+
+			// 範囲選択完了を待つPromise
+			return new Promise((resolve) => {
+				// 範囲選択完了のハンドラー
+				ipcMain.once('capture-selection', (event, rect) => {
+					try {
+						// 選択範囲でスクリーンショットをクロップ
+						const screenshot = sources[0].thumbnail;
+						const cropped = screenshot.crop(rect);
+						const croppedBase64 = `data:image/png;base64,${cropped.toPNG().toString('base64')}`;
+
+						captureWindow.close();
+						mainWindow?.show();
+						resolve({
+							fileName: `capture_${Date.now()}.png`,
+							fileData: croppedBase64,
+							fileSize: cropped.toPNG().length,
+							mimeType: 'image/png'
+						});
+					} catch (error) {
+						console.error('Crop error:', error);
+						captureWindow.close();
+						mainWindow?.show();
+						resolve(null);
+					}
+				});
+
+				// キャンセルのハンドラー
+				ipcMain.once('capture-cancel', () => {
+					captureWindow.close();
+					mainWindow?.show();
+					resolve(null);
+				});
+
+				// ウィンドウが閉じられた場合
+				captureWindow.on('closed', () => {
+					mainWindow?.show();
+					resolve(null);
+				});
+			});
+		} catch (error) {
+			console.error('Capture area error:', error);
+			mainWindow?.show();
+			return null;
+		}
+	});
+
 	createWindow();
 
 	// ALT + Spaceでウィンドウの表示/非表示を切り替えるグローバルショートカットを登録
