@@ -940,13 +940,13 @@ body {
 .opacity-control {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 0 8px;
+  gap: 4px;
+  padding: 0 4px;
   -webkit-app-region: no-drag;
 }
 
 .opacity-slider {
-  width: 80px;
+  width: 56px;
   height: 3px;
   border-radius: 2px;
   background: rgba(255, 255, 255, 0.2);
@@ -968,7 +968,7 @@ body {
 
 .header-buttons {
   display: flex;
-  gap: 4px;
+  gap: 8px;
   -webkit-app-region: no-drag;
 }
 

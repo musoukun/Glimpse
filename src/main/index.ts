@@ -7,6 +7,9 @@ import {
 	desktopCapturer,
 	globalShortcut,
 	screen,
+	Tray,
+	Menu,
+	nativeImage,
 } from "electron";
 import { join } from "path";
 import { electronApp, optimizer, is } from "@electron-toolkit/utils";
@@ -17,6 +20,7 @@ import Store from 'electron-store';
 // OAuth認証のコールバックを処理するための変数
 let mainWindow: BrowserWindow | null = null;
 let authWindow: BrowserWindow | null = null;
+let tray: Tray | null = null;
 
 // electron-storeのインスタンス
 const store = new Store();
@@ -40,7 +44,8 @@ function createWindow(): void {
 		maximizable: false, // 最大化を無効化
 		minimizable: true, // 最小化を有効化
 		alwaysOnTop: false, // 常に最前面を無効化
-		skipTaskbar: false, // タスクバーに表示
+		skipTaskbar: false, // タスクバーに表示する
+		icon: join(__dirname, '../../public/glimpse-icon3.png'), // アイコンを設定
 		webPreferences: {
 			preload: join(__dirname, "../preload/index.mjs"),
 			sandbox: false,
@@ -110,7 +115,7 @@ function createWindow(): void {
 // Some APIs can only be used after this event occurs.
 app.whenReady().then(() => {
 	// Set app user model id for windows
-	electronApp.setAppUserModelId("com.electron");
+	electronApp.setAppUserModelId("com.glimpse.app");
 
 	// Default open or close DevTools by F12 in development
 	// and ignore CommandOrControl + R in production.
@@ -359,7 +364,12 @@ app.whenReady().then(() => {
 	ipcMain.handle("window:close", async (event) => {
 		const window = BrowserWindow.fromWebContents(event.sender);
 		if (!window) return;
-		window.close();
+		// タスクトレイがある場合はウィンドウを非表示にするだけ
+		if (tray) {
+			window.hide();
+		} else {
+			window.close();
+		}
 	});
 
 	// ウィンドウ表示/非表示切り替えIPCハンドラー
@@ -571,6 +581,55 @@ app.whenReady().then(() => {
 
 	createWindow();
 
+	// タスクトレイを作成
+	const iconPath = join(__dirname, '../../public/glimpse-icon3.png');
+	const trayIcon = nativeImage.createFromPath(iconPath);
+	tray = new Tray(trayIcon);
+
+	// タスクトレイのツールチップ
+	tray.setToolTip('Glimpse');
+
+	// タスクトレイのコンテキストメニュー
+	const contextMenu = Menu.buildFromTemplate([
+		{
+			label: '表示/非表示',
+			click: () => {
+				if (mainWindow) {
+					if (mainWindow.isVisible()) {
+						mainWindow.hide();
+					} else {
+						mainWindow.show();
+						mainWindow.focus();
+					}
+				}
+			}
+		},
+		{ type: 'separator' },
+		{
+			label: '終了',
+			click: () => {
+				app.quit();
+			}
+		}
+	]);
+
+	// タスクトレイをクリックしたときの動作
+	tray.on('click', () => {
+		if (mainWindow) {
+			if (mainWindow.isVisible()) {
+				mainWindow.hide();
+			} else {
+				mainWindow.show();
+				mainWindow.focus();
+			}
+		}
+	});
+
+	// 右クリックでコンテキストメニューを表示
+	tray.on('right-click', () => {
+		tray?.popUpContextMenu(contextMenu);
+	});
+
 	// ALT + Spaceでウィンドウの表示/非表示を切り替えるグローバルショートカットを登録
 	globalShortcut.register('Alt+Space', () => {
 		if (mainWindow) {
@@ -594,7 +653,8 @@ app.whenReady().then(() => {
 // for applications and their menu bar to stay active until the user quits
 // explicitly with Cmd + Q.
 app.on("window-all-closed", () => {
-	if (process.platform !== "darwin") {
+	// タスクトレイがある場合はアプリを終了しない
+	if (process.platform !== "darwin" && !tray) {
 		app.quit();
 	}
 });
@@ -602,6 +662,9 @@ app.on("window-all-closed", () => {
 // アプリケーション終了時にグローバルショートカットを解除
 app.on("will-quit", () => {
 	globalShortcut.unregisterAll();
+	if (tray) {
+		tray.destroy();
+	}
 });
 
 // In this file you can include the rest of your app"s main process

@@ -46,21 +46,29 @@
 		"appId": "com.glimpse.app",
 		"productName": "Glimpse",
 		"directories": {
-			"output": "dist"
+			"output": "dist",
+			"buildResources": "build"
 		},
 		"files": [
-			"out/**/*"
+			"out/**/*",
+			"public/**/*"
+		],
+		"extraResources": [
+			{
+				"from": "public/glimpse-icon3.png",
+				"to": "."
+			}
 		],
 		"win": {
-			"icon": "public/glimpse-icon.png",
+			"icon": "build/icon.png",
 			"target": "nsis"
 		},
 		"mac": {
-			"icon": "public/glimpse-icon.png",
+			"icon": "build/icon.png",
 			"category": "public.app-category.productivity"
 		},
 		"linux": {
-			"icon": "public/glimpse-icon.png",
+			"icon": "build/icon.png",
 			"target": "AppImage"
 		}
 	}

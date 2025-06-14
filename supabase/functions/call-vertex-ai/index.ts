@@ -271,7 +271,7 @@ ${message}`
 		const fullText = candidate.content.parts
 			.map(part => part.text || '')
 			.filter(text => text.length > 0)
-			.join('\n\n')
+			.join('\n')
 
 		return fullText
 	} catch (error) {

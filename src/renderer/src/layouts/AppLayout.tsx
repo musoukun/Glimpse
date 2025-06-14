@@ -55,17 +55,21 @@ export const AppLayout: React.FC = () => {
 		};
 	}, [addAttachmentDirect]);
 
-	// 初回起動時のお知らせをチェック
 	// Answer Mode変更時にLocalStorageに保存
 	const handleAnswerModeChange = (enabled: boolean) => {
 		setAnswerMode(enabled);
 		localStorage.setItem('glimpse_answer_mode', enabled.toString());
 	};
 
+	// 初回起動時のお知らせをチェック（アプリ起動時のみ）
 	useEffect(() => {
 		if (user) {
+			// セッションストレージを使用してアプリ起動時のみ表示
+			const hasShownInSession = sessionStorage.getItem('glimpse_welcome_shown_session');
 			const hasSeenWelcome = localStorage.getItem('glimpse_welcome_seen');
-			if (!hasSeenWelcome) {
+			
+			if (!hasShownInSession && !hasSeenWelcome) {
+				sessionStorage.setItem('glimpse_welcome_shown_session', 'true');
 				setNotification({
 					type: 'info',
 					title: 'Glimpseへようこそ！',
