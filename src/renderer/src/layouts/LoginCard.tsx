@@ -1,6 +1,8 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { useState } from "react";
-import { Mail, Lock, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
+import "./LoginCard.css";
 
 interface LoginCardProps {
 	onEmailLogin?: (email: string, password: string) => Promise<void>;
@@ -20,30 +22,46 @@ function LoginCard({
 
 	const handleEmailLogin = async (e: React.FormEvent) => {
 		e.preventDefault();
-		if (!onEmailLogin) return;
+		if (!onEmailLogin) {
+			console.error("onEmailLogin prop is not provided");
+			return;
+		}
 
+		console.log("Starting email login with:", email);
 		setError(null);
 		setIsLoading(true);
 
 		try {
 			await onEmailLogin(email, password);
-		} catch (err) {
-			setError("メールアドレスまたはパスワードが正しくありません");
+			console.log("Email login successful");
+		} catch (err: any) {
+			const errorMessage =
+				err?.message ||
+				"メールアドレスまたはパスワードが正しくありません";
+			setError(errorMessage);
+			console.error("Login error:", err);
 		} finally {
 			setIsLoading(false);
 		}
 	};
 
 	const handleGoogleLogin = async () => {
-		if (!onGoogleLogin) return;
+		if (!onGoogleLogin) {
+			console.error("onGoogleLogin prop is not provided");
+			return;
+		}
 
+		console.log("Starting Google login");
 		setError(null);
 		setIsLoading(true);
 
 		try {
 			await onGoogleLogin();
-		} catch (err) {
-			setError("Googleログインに失敗しました");
+			console.log("Google login successful");
+		} catch (err: any) {
+			const errorMessage = err?.message || "Googleログインに失敗しました";
+			setError(errorMessage);
+			console.error("Google login error:", err);
 		} finally {
 			setIsLoading(false);
 		}
@@ -60,11 +78,10 @@ function LoginCard({
 
 			<form onSubmit={handleEmailLogin} className="login-form">
 				<div className="form-group">
-					<label htmlFor="email" className="form-label">
-						Email address
-					</label>
 					<div className="input-wrapper">
-						<Mail className="input-icon" />
+						<label htmlFor="email" className="form-label">
+							Email address
+						</label>
 						<input
 							id="email"
 							type="email"
@@ -79,11 +96,10 @@ function LoginCard({
 				</div>
 
 				<div className="form-group">
-					<label htmlFor="password" className="form-label">
-						Password
-					</label>
 					<div className="input-wrapper">
-						<Lock className="input-icon" />
+						<label htmlFor="password" className="form-label">
+							Password
+						</label>
 						<input
 							id="password"
 							type="password"

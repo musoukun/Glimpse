@@ -6,10 +6,12 @@ import {
 	dialog,
 	desktopCapturer,
 	globalShortcut,
+	screen,
 } from "electron";
 import { join } from "path";
 import { electronApp, optimizer, is } from "@electron-toolkit/utils";
-import { readFileSync } from "fs";
+import { readFileSync, writeFileSync } from "fs";
+import { tmpdir } from "os";
 
 // OAuth認証のコールバックを処理するための変数
 let mainWindow: BrowserWindow | null = null;
@@ -25,7 +27,7 @@ function createWindow(): void {
 		frame: false, // フレームレスウィンドウ
 		resizable: true, // サイズ変更を有効化
 		transparent: true, // ウィンドウ透明化
-		backgroundColor: "#00000000", // 完全透明背景
+		backgroundColor: "#00000001", // ほぼ透明（完全透明だとクリックできない）
 		maximizable: false, // 最大化を無効化
 		minimizable: true, // 最小化を有効化
 		alwaysOnTop: false, // 常に最前面を無効化
@@ -41,6 +43,17 @@ function createWindow(): void {
 
 	mainWindow.on("ready-to-show", () => {
 		mainWindow?.show();
+		console.log("Window created successfully");
+		
+		// 開発時のデバッグ情報
+		if (is.dev) {
+			console.log("Window properties:", {
+				resizable: mainWindow?.isResizable(),
+				maximizable: mainWindow?.isMaximizable(),
+				minimizable: mainWindow?.isMinimizable(),
+				backgroundColor: mainWindow?.getBackgroundColor()
+			});
+		}
 	});
 
 	mainWindow.webContents.setWindowOpenHandler((details) => {

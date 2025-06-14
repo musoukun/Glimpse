@@ -6,6 +6,7 @@ interface UseSupabaseAuthReturn {
   user: User | null
   loading: boolean
   signInWithGoogle: () => Promise<{ error: AuthError | null }>
+  signInWithEmail: (email: string, password: string) => Promise<{ error: AuthError | null }>
   signOut: () => Promise<{ error: AuthError | null }>
 }
 
@@ -80,6 +81,19 @@ export function useSupabaseAuth(): UseSupabaseAuthReturn {
     }
   }
 
+  const signInWithEmail = async (email: string, password: string) => {
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      })
+      return { error }
+    } catch (error) {
+      console.error('Email sign in error:', error)
+      return { error: error as AuthError }
+    }
+  }
+
   const signOut = async () => {
     try {
       const { error } = await supabase.auth.signOut()
@@ -102,6 +116,7 @@ export function useSupabaseAuth(): UseSupabaseAuthReturn {
     user,
     loading,
     signInWithGoogle,
+    signInWithEmail,
     signOut
   }
 }

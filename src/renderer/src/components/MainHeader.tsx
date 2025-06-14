@@ -13,6 +13,23 @@ export const MainHeader: React.FC<MainHeaderProps> = ({ onSettingsClick }) => {
 	const [currentSize, setCurrentSize] = useState<WindowSize>("small");
 	const { signOut } = useSupabaseAuth();
 
+	// ドラッグエリアのデバッグ
+	useEffect(() => {
+		const dragArea = document.querySelector('.drag-area');
+		if (dragArea) {
+			console.log('Drag area found:', dragArea);
+			const computedStyle = window.getComputedStyle(dragArea);
+			console.log('Drag area -webkit-app-region:', computedStyle.getPropertyValue('-webkit-app-region'));
+			
+			// マウスイベントをリッスン
+			dragArea.addEventListener('mousedown', (e) => {
+				console.log('Mouse down on drag area', e);
+			});
+		} else {
+			console.log('Drag area not found');
+		}
+	}, []);
+
 	const handleOpacityChange = useCallback(
 		(event: React.ChangeEvent<HTMLInputElement>) => {
 			const newOpacity = parseFloat(event.target.value);

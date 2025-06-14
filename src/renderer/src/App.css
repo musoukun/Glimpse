@@ -14,7 +14,9 @@
 .main-response-section .message-content pre {
   margin: 0 !important;
   padding: 0 !important;
-}/* グラスモーフィズムデザイン対応 */
+}
+
+/* グラスモーフィズムデザイン対応 */
 /* CSSカスタムプロパティ */
 :root {
   --app-opacity: 1.0;
@@ -54,6 +56,8 @@ body {
   height: 100vh;
   position: relative;
   overflow: hidden;
+  /* ウィンドウ全体をドラッグ可能にする */
+  -webkit-app-region: drag;
 
   /* グラスモーフィズム背景 */
   background: rgba(30, 30, 30, var(--app-opacity));
@@ -895,6 +899,8 @@ body {
   height: 100vh;
   position: relative;
   overflow: hidden;
+  /* ウィンドウ全体をドラッグ可能にする */
+  -webkit-app-region: drag;
 
   /* グラスモーフィズム背景 */
   background: rgba(30, 30, 30, var(--app-opacity));
@@ -924,8 +930,11 @@ body {
   display: flex;
   align-items: center;
   flex: 1;
-  -webkit-app-region: drag;
+  /* ドラッグ設定は親要素から継承されるため不要 */
   cursor: move;
+  user-select: none;
+  /* テキスト選択を無効化 */
+  -webkit-user-select: none;
 }
 
 .opacity-control {
@@ -1014,6 +1023,8 @@ body {
   flex-direction: column;
   min-height: 140px;
   max-height: 200px;
+  /* 入力エリアはドラッグ不可にする */
+  -webkit-app-region: no-drag;
 }
 
 /* 添付ファイルがある場合の入力エリア */
@@ -1033,6 +1044,8 @@ body {
   box-sizing: border-box;
   padding: 0;
   margin: 0;
+  /* 回答エリアはドラッグ不可にする（テキスト選択可能にするため） */
+  -webkit-app-region: no-drag;
 }
 
 /* 添付ファイルサムネイル表示エリア */
@@ -1639,6 +1652,3 @@ body {
   font-size: 13px;
   text-align: center;
 }
-
-/* LoginCard.cssのインポート */
-@import './components/LoginCard.css';

@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 import "./App.css";
-import { SupabaseAuthCard } from "./components/SupabaseAuthCard";
 import { useSupabaseAuth } from "./hooks/useSupabaseAuth";
 import { AppLayout } from "./layouts/AppLayout";
+import { AuthLayout } from "./layouts/AuthLayout";
 
 function App() {
 	const auth = useSupabaseAuth();
@@ -30,11 +30,7 @@ function App() {
 
 	// 認証されていない場合はログイン画面を表示
 	if (!auth.user) {
-		return (
-			<div className="app">
-				<SupabaseAuthCard />
-			</div>
-		);
+		return <AuthLayout />;
 	}
 
 	// 認証されている場合はメイン画面を表示

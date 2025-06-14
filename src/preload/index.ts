@@ -40,6 +40,7 @@ const api = {
 
 	// スクリーンショット機能
 	takeScreenshot: () => ipcRenderer.invoke("take-screenshot"),
+	captureArea: () => ipcRenderer.invoke("capture-area"),
 
 	// ウィンドウ関連のAPI
 	minimizeWindow: () => ipcRenderer.invoke("minimize-window"),
