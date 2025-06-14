@@ -35,14 +35,14 @@ export const MainResponseSection: React.FC<MainResponseSectionProps> = ({
 		// 初回ロード時に設定を読み込み
 		const loadSettings = () => {
 			try {
-				const settings = localStorage.getItem('glimpse_settings');
+				const settings = localStorage.getItem("glimpse_settings");
 				if (settings) {
 					const parsed = JSON.parse(settings);
 					const size = parsed.response_settings?.font_size || 12;
 					setFontSize(size);
 				}
 			} catch (error) {
-				console.error('Failed to load settings:', error);
+				console.error("Failed to load settings:", error);
 			}
 		};
 
@@ -53,9 +53,12 @@ export const MainResponseSection: React.FC<MainResponseSectionProps> = ({
 			loadSettings();
 		};
 
-		window.addEventListener('settings-changed', handleSettingsChange);
+		window.addEventListener("settings-changed", handleSettingsChange);
 		return () => {
-			window.removeEventListener('settings-changed', handleSettingsChange);
+			window.removeEventListener(
+				"settings-changed",
+				handleSettingsChange
+			);
 		};
 	}, []);
 
@@ -73,7 +76,7 @@ export const MainResponseSection: React.FC<MainResponseSectionProps> = ({
 						showCloseButton={!!onNotificationClose}
 					/>
 				)}
-				
+
 				{/* ローディング表示を優先 */}
 				{loading ? (
 					<div className="loading-container">
@@ -86,14 +89,22 @@ export const MainResponseSection: React.FC<MainResponseSectionProps> = ({
 							<div className="messages-container">
 								{/* アシスタントの回答のみを表示 */}
 								{messages
-									.filter((message) => message.role === "assistant")
+									.filter(
+										(message) =>
+											message.role === "assistant"
+									)
 									.slice(-1) // 最新の回答のみ
 									.map((message) => (
 										<div
 											key={message.id}
 											className={`message assistant-message ${message.isError ? "error-message" : ""}`}
 										>
-											<div className="message-content" style={{ fontSize: `${fontSize}px` }}>
+											<div
+												className="message-content"
+												style={{
+													fontSize: `${fontSize}px`,
+												}}
+											>
 												{message.content}
 											</div>
 										</div>
@@ -101,7 +112,11 @@ export const MainResponseSection: React.FC<MainResponseSectionProps> = ({
 							</div>
 						) : !notification ? (
 							<div className="empty-state">
-								<p>メッセージを入力してAIとの会話を開始してください</p>
+								<p>
+									質問してください。<p></p>-
+									画像だけでも質問できます<p></p>-
+									Web検索し即座に回答します
+								</p>
 							</div>
 						) : null}
 					</>

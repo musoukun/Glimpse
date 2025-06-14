@@ -12,16 +12,25 @@ import { join } from "path";
 import { electronApp, optimizer, is } from "@electron-toolkit/utils";
 import { readFileSync, writeFileSync } from "fs";
 import { tmpdir } from "os";
+import Store from 'electron-store';
 
 // OAuth認証のコールバックを処理するための変数
 let mainWindow: BrowserWindow | null = null;
 let authWindow: BrowserWindow | null = null;
 
+// electron-storeのインスタンス
+const store = new Store();
+
 function createWindow(): void {
+	// 保存されたウィンドウ位置を読み込む
+	const savedBounds = store.get('windowBounds') as { x: number; y: number; width: number; height: number } | undefined;
+	
 	// Create the browser window.
 	mainWindow = new BrowserWindow({
-		width: 280,
-		height: 400,
+		width: savedBounds?.width || 280,
+		height: savedBounds?.height || 400,
+		x: savedBounds?.x,
+		y: savedBounds?.y,
 		show: false,
 		autoHideMenuBar: true,
 		frame: false, // フレームレスウィンドウ
@@ -39,6 +48,25 @@ function createWindow(): void {
 			nodeIntegration: false,
 			webSecurity: false, // Firebase認証のポップアップを許可
 		},
+	});
+
+	// ウィンドウの位置・サイズ変更を監視して保存
+	let saveTimeout: NodeJS.Timeout;
+	const saveBounds = () => {
+		if (mainWindow && !mainWindow.isDestroyed()) {
+			const bounds = mainWindow.getBounds();
+			store.set('windowBounds', bounds);
+		}
+	};
+
+	mainWindow.on('move', () => {
+		clearTimeout(saveTimeout);
+		saveTimeout = setTimeout(saveBounds, 500);
+	});
+
+	mainWindow.on('resize', () => {
+		clearTimeout(saveTimeout);
+		saveTimeout = setTimeout(saveBounds, 500);
 	});
 
 	mainWindow.on("ready-to-show", () => {
@@ -502,6 +530,10 @@ app.whenReady().then(() => {
 		}
 
 		window.setSize(width, height);
+		// サイズ変更後も位置を保存
+		const bounds = window.getBounds();
+		store.set('windowBounds', bounds);
+		store.set('windowSize', size);
 		console.log(`ウィンドウサイズを${size}(${width}x${height})に変更`);
 		return true;
 	});
