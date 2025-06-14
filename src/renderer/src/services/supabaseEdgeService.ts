@@ -17,7 +17,9 @@ class SupabaseEdgeService {
   async generateResponse(
     message: string,
     images: string[] = [],
-    systemPrompt?: string
+    systemPrompt?: string,
+    enableGrounding: boolean = true,
+    groundingMaxTokens: number = 512
   ): Promise<AIResponse> {
     try {
       // Supabaseの現在のセッションを取得
@@ -55,7 +57,10 @@ class SupabaseEdgeService {
       // リクエストボディを明示的に作成
       const requestBody = {
         message: fullMessage,
-        images
+        images,
+        systemPrompt,
+        enableGrounding,
+        groundingMaxTokens
       }
       
       console.log('Request body size:', JSON.stringify(requestBody).length)

@@ -11,7 +11,7 @@ console.log("Call Vertex AI Edge Function started")
 const supabaseUrl = Deno.env.get("SUPABASE_URL")!
 const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
 const gcpProjectId = Deno.env.get("GCP_PROJECT_ID")!
-const gcpLocation = Deno.env.get("GCP_LOCATION") || "asia-northeast1"
+const gcpLocation = Deno.env.get("GCP_LOCATION") || "us-central1"
 const gcpServiceAccountKey = Deno.env.get("GCP_SERVICE_ACCOUNT_KEY")! // JSON文字列として保存
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey)
@@ -22,6 +22,9 @@ const MONTHLY_LIMIT = 50
 interface CallRequest {
 	message: string
 	images?: string[] // Base64エンコードされた画像データ
+	systemPrompt?: string // システムプロンプト
+	enableGrounding?: boolean // グラウンディングを有効化するかどうか
+	groundingMaxTokens?: number // Google検索結果用の最大トークン数
 }
 
 interface VertexAIResponse {
@@ -103,7 +106,10 @@ async function getGoogleAuth(): Promise<GoogleAuth> {
 // Vertex AI APIを呼び出す関数
 async function callVertexAI(
 	message: string,
-	images: string[] = []
+	images: string[] = [],
+	systemPrompt?: string,
+	enableGrounding: boolean = false,
+	groundingMaxTokens: number = 512
 ): Promise<string> {
 	try {
 		console.log("Calling Vertex AI with message length:", message.length)
@@ -114,8 +120,23 @@ async function callVertexAI(
 		
 		console.log("Got access token:", !!accessToken.token)
 
+		// システムプロンプトをユーザーメッセージに統合
+		let finalMessage = message
+		if (systemPrompt) {
+			// グラウンディング有効時は特別な指示を追加
+			if (enableGrounding) {
+				finalMessage = `${systemPrompt}
+
+重要: 検索結果を使用する場合でも、必ず指定された文字数制限を守ってください。簡潔で要点を絞った回答をしてください。
+
+${message}`
+			} else {
+				finalMessage = `${systemPrompt}\n\n${message}`
+			}
+		}
+
 		// Gemini用のコンテンツ構築
-		const parts: any[] = [{ text: message }]
+		const parts: any[] = [{ text: finalMessage }]
 		
 		console.log(`Processing ${images?.length || 0} images`)
 		
@@ -147,17 +168,27 @@ async function callVertexAI(
 			})
 		}
 
+		// コンテンツを作成（systemロールはサポートされていないためuserロールのみ）
+		const contents = [{
+			role: 'user',
+			parts
+		}]
+
+		// グラウンディング用のツール設定（修正版）
+		const tools = enableGrounding ? [{
+			google_search: {}
+		}] : undefined
+
 		// 新しいGemini API形式のリクエストボディ
 		const requestBody = {
-			contents: [{
-				role: 'user',
-				parts
-			}],
+			contents,
+			...(tools && { tools }),
 			generationConfig: {
 				temperature: 0.7,
 				topK: 40,
 				topP: 0.95,
-				maxOutputTokens: 2048,
+				// グラウンディング有効時はユーザー設定を使用
+				maxOutputTokens: enableGrounding ? groundingMaxTokens : 2048,
 				stopSequences: []
 			},
 			safetySettings: [
@@ -181,11 +212,13 @@ async function callVertexAI(
 		}
 
 		// Vertex AI エンドポイント - generateContentを使用
-		// gemini-1.5-flash から gemini-2.0-flash-exp に変更
-		const endpoint = `https://${gcpLocation}-aiplatform.googleapis.com/v1/projects/${gcpProjectId}/locations/${gcpLocation}/publishers/google/models/gemini-2.0-flash:generateContent`
+		// Gemini 2.0 Flashを使用（新しいプロジェクトで利用可能）
+		const endpoint = `https://${gcpLocation}-aiplatform.googleapis.com/v1/projects/${gcpProjectId}/locations/${gcpLocation}/publishers/google/models/gemini-2.0-flash-001:generateContent`
 		
 		console.log("Calling Vertex AI endpoint:", endpoint)
-		console.log("Request body parts count:", requestBody.contents[0].parts.length)
+		console.log("GCP Location:", gcpLocation)
+		console.log("Request body parts count:", contents[0].parts.length)
+		console.log("Grounding enabled:", enableGrounding)
 		console.log("Request body structure:", JSON.stringify(requestBody, (key, value) => {
 			if (key === 'data' && typeof value === 'string' && value.length > 100) {
 				return `[Base64 data - ${value.length} chars]`
@@ -234,7 +267,13 @@ async function callVertexAI(
 			throw new Error("Vertex AI APIからのコンテンツが無効です")
 		}
 
-		return candidate.content.parts[0].text || ''
+		// 複数のパーツがある場合は全て結合する（改行を保持）
+		const fullText = candidate.content.parts
+			.map(part => part.text || '')
+			.filter(text => text.length > 0)
+			.join('\n\n')
+
+		return fullText
 	} catch (error) {
 		console.error("Vertex AI call failed:", error)
 		if (error instanceof Error) {
@@ -409,7 +448,7 @@ Deno.serve(async (req: Request) => {
 
 		// リクエストボディの解析
 		const requestData: CallRequest = await req.json()
-		const { message, images = [] } = requestData
+		const { message, images = [], systemPrompt, enableGrounding = true, groundingMaxTokens = 512 } = requestData
 
 		if (!message || message.trim().length === 0) {
 			return new Response(
@@ -436,7 +475,7 @@ Deno.serve(async (req: Request) => {
 		}
 
 		// Vertex AI APIの呼び出し
-		const vertexResponse = await callVertexAI(message, images)
+		const vertexResponse = await callVertexAI(message, images, systemPrompt, enableGrounding, groundingMaxTokens)
 
 		// 使用量の更新
 		await updateUsage(supabaseUser.uid)

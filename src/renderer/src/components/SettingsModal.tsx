@@ -17,6 +17,7 @@ interface AppSettings {
 		response_language: string;
 		user_prompt: string;
 		font_size: number;
+		grounding_max_tokens: number; // Google検索結果の文字数制限
 	};
 }
 
@@ -51,6 +52,7 @@ function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 					response_language: "日本語",
 					user_prompt: "",
 					font_size: 14,
+					grounding_max_tokens: 512, // Google検索結果のデフォルト制限
 				},
 			};
 
@@ -256,6 +258,29 @@ function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 									/>
 									<small>
 										AIの応答の最大文字数を設定します
+									</small>
+								</div>
+
+								<div className="form-group">
+									<label>Google検索結果の制限</label>
+									<input
+										type="number"
+										min="256"
+										max="2048"
+										step="128"
+										value={
+											settings.response_settings
+												.grounding_max_tokens
+										}
+										onChange={(e) =>
+											updateResponseSetting(
+												"grounding_max_tokens",
+												parseInt(e.target.value)
+											)
+										}
+									/>
+									<small>
+										Google検索結果を使用した回答の最大トークン数（約文字数の0.7倍）。低い値ほど簡潔な回答になります。
 									</small>
 								</div>
 

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback, useEffect } from "react";
-import { Send, Paperclip, Camera } from "lucide-react";
+import { Send, Paperclip, Crop } from "lucide-react";
 import type { Attachment } from "../types";
 
 interface MainInputSectionProps {
@@ -146,7 +146,7 @@ export const MainInputSection: React.FC<MainInputSectionProps> = ({
 							canAddMore ? "画面をキャプチャ" : "添付は最大4枚まで"
 						}
 					>
-						<Camera size={16} />
+						<Crop size={16} />
 					</button>
 					<button
 						onClick={onAddAttachment}

@@ -23,14 +23,14 @@ class AILogicService {
 
   private updateSystemPrompt() {
     const settings = this.getSettings();
-    const maxChars = settings.response_settings?.max_characters || 230;
+    const maxChars = settings.response_settings?.max_characters || 200;
     const userPrompt = settings.response_settings?.user_prompt || '';
     const language = settings.response_settings?.response_language || '日本語';
 
     this.systemPrompt = `あなたは回答を単純化して要約するAIアシスタントです。
     画像に関する質問に対しては、画像の内容を詳しく解説してください。
     以下のルールに従って回答してください：
-    1. 画像のみが提供された場合：画像の内容を詳しく解説してください
+    1. 画像のみが提供された場合：画像の中に出てくるものが、何かを出来るだけ単純化し、要約して、解説してください
     2. 画像と質問が提供された場合：質問に対して画像を参考に回答してください
     3. 回答は${maxChars}文字以内で要約してください
     4. 必ず${language}で回答してください
@@ -57,8 +57,18 @@ class AILogicService {
     images: string[] = []
   ): Promise<AIResponse> {
     try {
-      // システムプロンプトを渡してsupabaseEdgeServiceを呼び出し
-      return await supabaseEdgeService.generateResponse(message, images, this.systemPrompt);
+      const settings = this.getSettings();
+      const groundingMaxTokens = settings.response_settings?.grounding_max_tokens || 512;
+      
+      // システムプロンプトと設定値を渡してsupabaseEdgeServiceを呼び出し
+      // グラウンディングは常に有効にする
+      return await supabaseEdgeService.generateResponse(
+        message, 
+        images, 
+        this.systemPrompt, 
+        true, 
+        groundingMaxTokens
+      );
     } catch (error) {
       console.error('AI Logic error:', error);
       return {
