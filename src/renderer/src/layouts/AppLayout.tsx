@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { X, Settings, LogOut } from "lucide-react";
+import { MainHeader } from "../components/MainHeader";
 import { MainInputSection } from "../components/MainInputSection";
 import { MainResponseSection } from "../components/MainResponseSection";
 import SettingsModal from "../components/SettingsModal";
@@ -8,14 +8,13 @@ import { useAttachments } from "../hooks/useAttachments";
 import { useLLM } from "../hooks/useLLM";
 import { useFirebaseAuth } from "../hooks/useFirebaseAuth";
 import { useUsage } from "../hooks/useUsage";
-import { useOpacity } from "../hooks/useOpacity";
 import type { Message, Attachment } from "../types";
+import "../assets/ai-chat.css";
 
 export const AppLayout: React.FC = () => {
 	const [messages, setMessages] = useState<Message[]>([]);
 	const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-	const { opacity, setOpacity } = useOpacity();
-	const { user, loading: authLoading, signOut } = useFirebaseAuth();
+	const { user, loading: authLoading } = useFirebaseAuth();
 	const { usage, loading: usageLoading } = useUsage();
 	const { callLLM, loading: llmLoading } = useLLM();
 
@@ -70,19 +69,6 @@ export const AppLayout: React.FC = () => {
 		}
 	};
 
-	const handleCloseApp = () => {
-		window.electron?.closeApp();
-	};
-
-	const handleLogout = async () => {
-		try {
-			await signOut();
-			setMessages([]);
-		} catch (error) {
-			console.error("ログアウトエラー:", error);
-		}
-	};
-
 	// 認証中の場合
 	if (authLoading) {
 		return (
@@ -103,44 +89,7 @@ export const AppLayout: React.FC = () => {
 	return (
 		<div className="main-app-layout">
 			{/* ヘッダー */}
-			<header className="main-header">
-				<div className="drag-area">
-					<div className="opacity-control">
-						<input
-							type="range"
-							min="0.3"
-							max="1"
-							step="0.1"
-							value={opacity}
-							onChange={(e) => setOpacity(Number(e.target.value))}
-							className="opacity-slider"
-						/>
-					</div>
-				</div>
-				<div className="header-buttons">
-					<button
-						onClick={() => setIsSettingsOpen(true)}
-						className="header-button"
-						title="設定"
-					>
-						<Settings size={14} />
-					</button>
-					<button
-						onClick={handleLogout}
-						className="header-button logout-button"
-						title="ログアウト"
-					>
-						<LogOut size={14} />
-					</button>
-					<button
-						onClick={handleCloseApp}
-						className="header-button close-button"
-						title="閉じる"
-					>
-						<X size={14} />
-					</button>
-				</div>
-			</header>
+			<MainHeader onSettingsClick={() => setIsSettingsOpen(true)} />
 
 			{/* メインコンテンツ */}
 			<main className="main-content">

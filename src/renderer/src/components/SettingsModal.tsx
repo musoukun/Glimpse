@@ -83,13 +83,7 @@ function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 		if (key === "window_size" && typeof value === "string") {
 			try {
 				// Electron IPC経由でウィンドウサイズを変更
-				await (
-					window as unknown as {
-						api: {
-							resizeWindow: (size: string) => Promise<boolean>;
-						};
-					}
-				).api.resizeWindow(value);
+				await window.api.resizeWindow(value);
 				console.log(`ウィンドウサイズを${value}に変更`);
 			} catch (err) {
 				console.error("ウィンドウサイズ変更エラー:", err);
@@ -151,13 +145,13 @@ function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 										}
 									>
 										<option value="small">
-											小 (280x400)
+											small (280x400)
 										</option>
 										<option value="medium">
-											中 (320x450)
+											medium (320x450)
 										</option>
 										<option value="large">
-											大 (360x500)
+											large (360x500)
 										</option>
 									</select>
 								</div>

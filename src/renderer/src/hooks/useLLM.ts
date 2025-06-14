@@ -5,6 +5,8 @@ import { useUsage } from './useUsage'
 import type { Attachment } from '../types'
 import Logger from '../utils/logger'
 
+type LLMProvider = 'supabase' | 'firebase-ai'
+
 export const useLLM = () => {
   const { session, isAuthenticated } = useAuth()
   const { canMakeCall, fetchUsage } = useUsage()

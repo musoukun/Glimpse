@@ -30,7 +30,7 @@ function createWindow(): void {
 		alwaysOnTop: false, // 常に最前面を無効化
 		skipTaskbar: false, // タスクバーに表示
 		webPreferences: {
-			preload: join(__dirname, "../preload/index.js"),
+			preload: join(__dirname, "../preload/index.mjs"),
 			sandbox: false,
 			contextIsolation: true,
 			nodeIntegration: false,
@@ -462,6 +462,18 @@ app.whenReady().then(() => {
 
 	createWindow();
 
+	// ALT + Spaceでウィンドウの表示/非表示を切り替えるグローバルショートカットを登録
+	globalShortcut.register('Alt+Space', () => {
+		if (mainWindow) {
+			if (mainWindow.isVisible()) {
+				mainWindow.hide();
+			} else {
+				mainWindow.show();
+				mainWindow.focus();
+			}
+		}
+	});
+
 	app.on("activate", function () {
 		// On macOS it's common to re-create a window in the app when the
 		// dock icon is clicked and there are no other windows open.
@@ -476,6 +488,11 @@ app.on("window-all-closed", () => {
 	if (process.platform !== "darwin") {
 		app.quit();
 	}
+});
+
+// アプリケーション終了時にグローバルショートカットを解除
+app.on("will-quit", () => {
+	globalShortcut.unregisterAll();
 });
 
 // In this file you can include the rest of your app"s main process

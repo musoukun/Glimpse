@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { contextBridge, ipcRenderer } from "electron";
 import { electronAPI } from "@electron-toolkit/preload";
 
@@ -38,25 +39,41 @@ const api = {
 	// ウィンドウ関連のAPI
 	minimizeWindow: () => ipcRenderer.invoke("minimize-window"),
 	maximizeWindow: () => ipcRenderer.invoke("maximize-window"),
-	closeWindow: () => ipcRenderer.invoke("close-window"),
+	closeWindow: () => ipcRenderer.invoke("window:close"),
 	resizeWindow: (size: string) => ipcRenderer.invoke("window:resize", size),
 	toggleWindowVisibility: () =>
 		ipcRenderer.invoke("window:toggle-visibility"),
 };
 
-// Use `contextBridge` APIs to expose Electron APIs to
-// renderer only if context isolation is enabled, otherwise
-// just add to the DOM global.
+console.log("Preload: Starting API exposure");
+console.log("Preload: process.contextIsolated =", process.contextIsolated);
+
 if (process.contextIsolated) {
 	try {
+		console.log("Preload: Exposing APIs via contextBridge");
+		console.log("Preload: API object:", api);
+		
 		contextBridge.exposeInMainWorld("electron", electronAPI);
 		contextBridge.exposeInMainWorld("api", api);
+		
+		console.log("Preload: APIs exposed successfully");
+		
+		// 公開されたAPIを確認
+		console.log("Preload: Verifying API exposure...");
 	} catch (error) {
-		console.error(error);
+		console.error("Preload: Error exposing APIs:", error);
+		console.error("Preload: Error details:", error.message, error.stack);
 	}
 } else {
-	// @ts-ignore (define in dts)
-	window.electron = electronAPI;
-	// @ts-ignore (define in dts)
-	window.api = api;
+	console.log("Preload: Context isolation disabled, adding to window");
+	(window as any).electron = electronAPI;
+	(window as any).api = api;
+	console.log("Preload: APIs added to window object");
 }
+
+// DOMContentLoadedイベントでAPIの確認
+window.addEventListener('DOMContentLoaded', () => {
+	console.log("Preload: DOMContentLoaded - checking API availability");
+	console.log("Preload: window.api =", (window as any).api);
+	console.log("Preload: window.api.resizeWindow =", (window as any).api?.resizeWindow);
+});

@@ -39,6 +39,13 @@ export interface IApi {
 	getScreenSources: () => Promise<unknown>
 	captureScreen: (sourceId: string) => Promise<unknown>
 	takeScreenshot: () => Promise<string>
+	
+	// ウィンドウ関連
+	minimizeWindow: () => Promise<void>
+	maximizeWindow: () => Promise<void>
+	closeWindow: () => Promise<void>
+	resizeWindow: (size: string) => Promise<boolean>
+	toggleWindowVisibility: () => Promise<void>
 }
 
 declare global {
