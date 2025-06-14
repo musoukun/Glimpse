@@ -7,6 +7,19 @@ const MAX_ATTACHMENTS = 4;
 export const useAttachments = () => {
 	const [attachments, setAttachments] = useState<Attachment[]>([]);
 
+	// 外部から添付ファイルを追加する関数
+	const addAttachmentDirect = useCallback((attachment: Attachment) => {
+		if (attachments.length >= MAX_ATTACHMENTS) {
+			Logger.warn(
+				"ATTACHMENTS",
+				`添付ファイルは最大${MAX_ATTACHMENTS}枚までです`
+			);
+			return;
+		}
+		setAttachments((prev) => [...prev, attachment]);
+		Logger.info("ATTACHMENTS", `ファイル追加完了: ${attachment.name}`);
+	}, [attachments.length]);
+
 	const addAttachment = useCallback(async () => {
 		try {
 			// 最大数チェック
@@ -144,6 +157,7 @@ export const useAttachments = () => {
 	return {
 		attachments,
 		addAttachment,
+		addAttachmentDirect,
 		addFromClipboard,
 		removeAttachment,
 		clearAttachments,

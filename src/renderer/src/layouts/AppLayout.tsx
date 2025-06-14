@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { MainHeader } from "../components/MainHeader";
 import { MainInputSection } from "../components/MainInputSection";
 import { MainResponseSection } from "../components/MainResponseSection";
@@ -21,11 +21,26 @@ export const AppLayout: React.FC = () => {
 	const {
 		attachments,
 		addAttachment,
+		addAttachmentDirect,
 		addFromClipboard,
 		removeAttachment,
 		clearAttachments,
 		canAddMore,
 	} = useAttachments();
+
+	// キャプチャ完了イベントのリスナーを設定
+	useEffect(() => {
+		const handleCaptureComplete = (event: CustomEvent) => {
+			if (event.detail) {
+				addAttachmentDirect(event.detail);
+			}
+		};
+
+		window.addEventListener('capture-complete', handleCaptureComplete as EventListener);
+		return () => {
+			window.removeEventListener('capture-complete', handleCaptureComplete as EventListener);
+		};
+	}, [addAttachmentDirect]);
 
 	const handleSendMessage = async (
 		message: string,

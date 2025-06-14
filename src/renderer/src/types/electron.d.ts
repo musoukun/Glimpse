@@ -44,6 +44,12 @@ export interface IApi {
 	getScreenSources: () => Promise<unknown>
 	captureScreen: (sourceId: string) => Promise<unknown>
 	takeScreenshot: () => Promise<string>
+	captureArea: () => Promise<{
+		fileName: string
+		fileData: string
+		fileSize: number
+		mimeType: string
+	} | null>
 	
 	// ウィンドウ関連
 	minimizeWindow: () => Promise<void>

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback, useEffect } from "react";
-import { Send, Paperclip } from "lucide-react";
+import { Send, Paperclip, Camera } from "lucide-react";
 import type { Attachment } from "../types";
 
 interface MainInputSectionProps {
@@ -119,6 +119,35 @@ export const MainInputSection: React.FC<MainInputSectionProps> = ({
 					}}
 				/>
 				<div className="input-buttons">
+					<button
+						onClick={async () => {
+							if (canAddMore) {
+								const result = await window.api.captureArea();
+								if (result) {
+									// キャプチャした画像を添付として追加
+									const attachment: Attachment = {
+										id: Date.now().toString(),
+										name: result.fileName,
+										type: result.mimeType,
+										size: result.fileSize,
+										data: result.fileData,
+									};
+									// 親コンポーネントに渡されたaddAttachmentメソッドを直接呼び出すことができないため、
+									// 一時的にローカルストレージ経由でイベントを発火
+									window.dispatchEvent(new CustomEvent('capture-complete', { 
+										detail: attachment 
+									}));
+								}
+							}
+						}}
+						disabled={disabled || !canAddMore}
+						className="input-button"
+						title={
+							canAddMore ? "画面をキャプチャ" : "添付は最大4枚まで"
+						}
+					>
+						<Camera size={16} />
+					</button>
 					<button
 						onClick={onAddAttachment}
 						disabled={disabled || !canAddMore}

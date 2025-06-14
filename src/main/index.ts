@@ -12,16 +12,36 @@ import { join } from "path";
 import { electronApp, optimizer, is } from "@electron-toolkit/utils";
 import { readFileSync, writeFileSync } from "fs";
 import { tmpdir } from "os";
+import Store from 'electron-store';
+
+// 設定を永続化するためのストア
+const store = new Store();
 
 // OAuth認証のコールバックを処理するための変数
 let mainWindow: BrowserWindow | null = null;
 let authWindow: BrowserWindow | null = null;
 
 function createWindow(): void {
+	// 保存されたウィンドウサイズを取得
+	const savedSize = store.get('windowSize', 'small') as string;
+	let width = 280;
+	let height = 400;
+	
+	switch (savedSize) {
+		case 'medium':
+			width = 320;
+			height = 450;
+			break;
+		case 'large':
+			width = 360;
+			height = 500;
+			break;
+	}
+
 	// Create the browser window.
 	mainWindow = new BrowserWindow({
-		width: 280,
-		height: 400,
+		width,
+		height,
 		show: false,
 		autoHideMenuBar: true,
 		frame: false, // フレームレスウィンドウ
@@ -354,7 +374,7 @@ app.whenReady().then(() => {
 	});
 
 	// ファイル選択IPCハンドラー
-	ipcMain.handle("file:select", async (event) => {
+	ipcMain.handle("select-file", async (event) => {
 		const window = BrowserWindow.fromWebContents(event.sender);
 		if (!window) return null;
 
@@ -502,7 +522,9 @@ app.whenReady().then(() => {
 		}
 
 		window.setSize(width, height);
-		console.log(`ウィンドウサイズを${size}(${width}x${height})に変更`);
+		// サイズを保存
+		store.set('windowSize', size);
+		console.log(`ウィンドウサイズを${size}(${width}x${height})に変更し、保存しました`);
 		return true;
 	});
 
