@@ -14,6 +14,19 @@ export const AppLayout: React.FC = () => {
 	const [messages, setMessages] = useState<Message[]>([]);
 	const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 	const [isThinking, setIsThinking] = useState(false);
+	const [studyMode, setStudyMode] = useState(() => {
+		const saved = localStorage.getItem('glimpse_study_mode');
+		return saved === 'true';
+	});
+	const [notification, setNotification] = useState<{
+		type: "info" | "warning" | "subscription" | "error";
+		title: string;
+		message: string;
+		actionButton?: {
+			label: string;
+			onClick: () => void;
+		};
+	} | null>(null);
 	const { user, loading: authLoading } = useSupabaseAuth();
 	const { callLLM, loading: llmLoading } = useLLM();
 
@@ -42,6 +55,33 @@ export const AppLayout: React.FC = () => {
 		};
 	}, [addAttachmentDirect]);
 
+	// 初回起動時のお知らせをチェック
+	// Study Mode変更時にLocalStorageに保存
+	const handleStudyModeChange = (enabled: boolean) => {
+		setStudyMode(enabled);
+		localStorage.setItem('glimpse_study_mode', enabled.toString());
+	};
+
+	useEffect(() => {
+		if (user) {
+			const hasSeenWelcome = localStorage.getItem('glimpse_welcome_seen');
+			if (!hasSeenWelcome) {
+				setNotification({
+					type: 'info',
+					title: 'Glimpseへようこそ！',
+					message: 'AIアシスタントが質問に答えます。画像の解析も可能です。月50回まで無料でご利用いただけます。',
+					actionButton: {
+						label: '使い始める',
+						onClick: () => {
+							localStorage.setItem('glimpse_welcome_seen', 'true');
+							setNotification(null);
+						}
+					}
+				});
+			}
+		}
+	}, [user]);
+
 	const handleSendMessage = async (
 		message: string,
 		attachments: Attachment[]
@@ -63,9 +103,11 @@ export const AppLayout: React.FC = () => {
 		setMessages((prev) => [...prev, userMessage]);
 		clearAttachments();
 		setIsThinking(true);
+		// 通知をクリア（LLMを実行するとお知らせは消える）
+		setNotification(null);
 
 		try {
-			const response = await callLLM(finalMessage, attachments);
+			const response = await callLLM(finalMessage, attachments, studyMode);
 
 			const assistantMessage: Message = {
 				id: (Date.now() + 1).toString(),
@@ -76,15 +118,33 @@ export const AppLayout: React.FC = () => {
 
 			setMessages((prev) => [...prev, assistantMessage]);
 		} catch (error) {
-			const errorMessage: Message = {
-				id: (Date.now() + 1).toString(),
-				content: `エラー: ${error instanceof Error ? error.message : "不明なエラーが発生しました"}`,
-				role: "assistant",
-				timestamp: new Date(),
-				isError: true,
-			};
+			// 月間制限エラーのチェック
+			const errorMsg = error instanceof Error ? error.message : "不明なエラーが発生しました";
+			if (errorMsg.includes('月間使用制限') || errorMsg.includes('制限')) {
+				// 課金促進の通知を表示
+				setNotification({
+					type: 'subscription',
+					title: '月間利用上限に達しました',
+					message: '今月の無料利用枠（50回）を使い切りました。月額$4で無制限にアップグレードできます。',
+					actionButton: {
+						label: 'アップグレードする',
+						onClick: () => {
+							// TODO: Stripeの決済ページへ遷移
+							window.open('https://buy.stripe.com/your-payment-link', '_blank');
+						}
+					}
+				});
+			} else {
+				const errorMessage: Message = {
+					id: (Date.now() + 1).toString(),
+					content: `エラー: ${errorMsg}`,
+					role: "assistant",
+					timestamp: new Date(),
+					isError: true,
+				};
 
-			setMessages((prev) => [...prev, errorMessage]);
+				setMessages((prev) => [...prev, errorMessage]);
+			}
 		} finally {
 			setIsThinking(false);
 		}
@@ -134,6 +194,10 @@ export const AppLayout: React.FC = () => {
 					<MainResponseSection
 						messages={messages}
 						loading={llmLoading || isThinking}
+						notification={notification}
+						onNotificationClose={() => setNotification(null)}
+						studyMode={studyMode}
+						onStudyModeChange={handleStudyModeChange}
 					/>
 				</div>
 			</main>

@@ -11,7 +11,7 @@ export const useLLM = () => {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const callLLM = useCallback(async (prompt: string, attachments: Attachment[] = []) => {
+  const callLLM = useCallback(async (prompt: string, attachments: Attachment[] = [], studyMode: boolean = false) => {
     // 認証チェックを有効化
     if (!user) {
       throw new Error('認証が必要です。ログインしてください。')
@@ -24,7 +24,8 @@ export const useLLM = () => {
 
       Logger.info('LLM', 'Supabase Edge Function呼び出し開始', {
         promptLength: prompt.length,
-        attachmentsCount: attachments.length
+        attachmentsCount: attachments.length,
+        studyMode
       })
 
       // 添付ファイルから画像データを抽出
@@ -33,7 +34,7 @@ export const useLLM = () => {
         .map(attachment => attachment.data)
 
       // Supabase Edge Functionを使用してレスポンスを生成
-      const response = await aiLogicService.generateResponse(prompt, images)
+      const response = await aiLogicService.generateResponse(prompt, images, studyMode)
 
       if (response.error) {
         throw new Error(response.error)

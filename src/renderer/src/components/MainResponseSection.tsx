@@ -1,13 +1,32 @@
 import React from "react";
 import type { Message } from "../types";
+import { NotificationCard } from "./NotificationCard";
+import { StudyModeToggle } from "./StudyModeToggle";
+
 interface MainResponseSectionProps {
 	messages: Message[];
 	loading?: boolean;
+	notification?: {
+		type: "info" | "warning" | "subscription" | "error";
+		title: string;
+		message: string;
+		actionButton?: {
+			label: string;
+			onClick: () => void;
+		};
+	} | null;
+	onNotificationClose?: () => void;
+	studyMode?: boolean;
+	onStudyModeChange?: (enabled: boolean) => void;
 }
 
 export const MainResponseSection: React.FC<MainResponseSectionProps> = ({
 	messages,
 	loading = false,
+	notification,
+	onNotificationClose,
+	studyMode = false,
+	onStudyModeChange,
 }) => {
 	// 設定からフォントサイズを取得
 	const [fontSize, setFontSize] = React.useState(14);
@@ -43,6 +62,18 @@ export const MainResponseSection: React.FC<MainResponseSectionProps> = ({
 	return (
 		<div className="main-response-section">
 			<div className="response-content-area">
+				{/* 通知表示を最優先 */}
+				{notification && (
+					<NotificationCard
+						type={notification.type}
+						title={notification.title}
+						message={notification.message}
+						actionButton={notification.actionButton}
+						onClose={onNotificationClose}
+						showCloseButton={!!onNotificationClose}
+					/>
+				)}
+				
 				{/* ローディング表示を優先 */}
 				{loading ? (
 					<div className="loading-container">
@@ -50,8 +81,8 @@ export const MainResponseSection: React.FC<MainResponseSectionProps> = ({
 					</div>
 				) : (
 					<>
-						{/* 回答履歴（最新の回答のみ表示） */}
-						{messages.length > 0 ? (
+						{/* 通知がある場合はメッセージを表示しない */}
+						{!notification && messages.length > 0 ? (
 							<div className="messages-container">
 								{/* アシスタントの回答のみを表示 */}
 								{messages
@@ -68,14 +99,21 @@ export const MainResponseSection: React.FC<MainResponseSectionProps> = ({
 										</div>
 									))}
 							</div>
-						) : (
+						) : !notification ? (
 							<div className="empty-state">
 								<p>メッセージを入力してAIとの会話を開始してください</p>
 							</div>
-						)}
+						) : null}
 					</>
 				)}
 			</div>
+			{/* Study Mode Toggle */}
+			{onStudyModeChange && (
+				<StudyModeToggle
+					enabled={studyMode}
+					onChange={onStudyModeChange}
+				/>
+			)}
 		</div>
 	);
 };
