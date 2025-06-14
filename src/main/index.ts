@@ -13,6 +13,7 @@ import { readFileSync } from "fs";
 
 // OAuth認証のコールバックを処理するための変数
 let mainWindow: BrowserWindow | null = null;
+let authWindow: BrowserWindow | null = null;
 
 function createWindow(): void {
 	// Create the browser window.
@@ -250,17 +251,69 @@ app.whenReady().then(() => {
 	// IPC test
 	ipcMain.handle("ping", () => "pong");
 
-	// OAuth認証ウィンドウを開くIPCハンドラー
-	ipcMain.handle('oauth:open-window', async (event, oauthUrl: string) => {
+	// Supabase OAuth認証ウィンドウを開くIPCハンドラー
+	ipcMain.handle('auth:open-window', async (event, provider: string) => {
 		try {
-			console.log('OAuth window opening with URL:', oauthUrl);
-			const result = await createOAuthWindow(oauthUrl);
-			console.log('OAuth result:', result);
-			return result;
+			if (authWindow && !authWindow.isDestroyed()) {
+				authWindow.focus();
+				return { error: new Error('認証ウィンドウは既に開いています') };
+			}
+
+			// Supabase Auth URLを構築
+			const supabaseUrl = 'https://kafgcovlbmatojtzlxkv.supabase.co';
+			const redirectUrl = 'http://localhost:5173/auth/callback'; // 開発環境
+			
+			authWindow = new BrowserWindow({
+				width: 500,
+				height: 700,
+				show: true,
+				modal: true,
+				parent: mainWindow || undefined,
+				webPreferences: {
+					nodeIntegration: false,
+					contextIsolation: true,
+				}
+			});
+
+			// Supabase Google OAuth URL
+			const authUrl = `${supabaseUrl}/auth/v1/authorize?provider=${provider}&redirect_to=${encodeURIComponent(redirectUrl)}`;
+			authWindow.loadURL(authUrl);
+
+			// 認証成功を検出
+			authWindow.webContents.on('will-redirect', (event, url) => {
+				console.log('Redirect to:', url);
+				if (url.startsWith(redirectUrl)) {
+					// 認証成功、メインウィンドウでコールバックURLを処理
+					if (mainWindow) {
+						mainWindow.webContents.send('auth:callback', url);
+					}
+					authWindow?.close();
+				}
+			});
+
+			authWindow.on('closed', () => {
+				authWindow = null;
+			});
+
+			return { error: null };
 		} catch (error) {
-			console.error('OAuth window error:', error);
-			return { success: false, error: 'OAuth認証ウィンドウの作成に失敗しました' };
+			console.error('Auth window error:', error);
+			return { error };
 		}
+	});
+
+	// 認証成功の通知を受け取るIPCハンドラー
+	ipcMain.handle('auth:success', async (event, authData) => {
+		console.log('Auth success:', authData);
+		// 必要に応じて処理を追加
+		return true;
+	});
+
+	// サインアウトの通知を受け取るIPCハンドラー
+	ipcMain.handle('auth:signout', async () => {
+		console.log('User signed out');
+		// 必要に応じて処理を追加
+		return true;
 	});
 
 	// Firebase OAuth認証ウィンドウを開くIPCハンドラー

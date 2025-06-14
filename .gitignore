@@ -24,3 +24,9 @@ dist-ssr
 *.sw?
 .env
 out
+
+# Setup scripts with sensitive data
+setup-edge-function.sh
+vertex-ai-key.json
+.mcp.json
+CLAUDE.md

@@ -1,4 +1,20 @@
-/* グラスモーフィズムデザイン対応 */
+/* AI Chatスタイルのオーバーライド */
+.main-response-section .message {
+  max-width: 100% !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+.main-response-section .message-content {
+  max-width: 100% !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+.main-response-section .message-content pre {
+  margin: 0 !important;
+  padding: 0 !important;
+}/* グラスモーフィズムデザイン対応 */
 /* CSSカスタムプロパティ */
 :root {
   --app-opacity: 1.0;
@@ -125,7 +141,7 @@ body {
 }
 
 .input-section textarea::placeholder {
-  color: rgba(255, 255, 255, 0.5);
+  color: rgba(255, 255, 255, 0.192);
   font-size: 10px;
 }
 
@@ -227,7 +243,7 @@ body {
   align-items: center;
   justify-content: center;
   padding: 24px;
-  color: rgba(255, 255, 255, 0.5);
+  color: rgba(255, 255, 255, 0.164);
   font-size: 10px;
   text-align: center;
   font-style: italic;
@@ -595,7 +611,7 @@ body {
   }
 
   .main-input-section {
-    padding: 10 px;
+    padding: 10px;
   }
 
   .main-response-section {
@@ -606,8 +622,10 @@ body {
     font-size: 13px;
   }
 
-  .message-content {
-    font-size: 13px;
+  .message-content,
+  .assistant-message .message-content {
+    font-size: 15px !important;
+    line-height: 1.6 !important;
   }
 }
 
@@ -631,8 +649,10 @@ body {
     min-height: 36px;
   }
 
-  .message-content {
-    font-size: 14px;
+  .message-content,
+  .assistant-message .message-content {
+    font-size: 16px !important;
+    line-height: 1.7 !important;
   }
 
   .input-button {
@@ -979,6 +999,8 @@ body {
   flex-direction: column;
   flex: 1;
   overflow: hidden;
+  padding: 0;
+  margin: 0;
 }
 
 /* 入力エリア（通常時） */
@@ -1148,13 +1170,15 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.05);
-  color: rgba(255, 255, 255, 0.9);
+  color: #ffffff !important;
   font-size: 13px;
   line-height: 1.5;
   resize: none;
   outline: none;
   font-family: inherit;
   transition: all 0.3s ease;
+  caret-color: #ffffff;
+  -webkit-text-fill-color: #ffffff !important;
 }
 
 .message-input:focus {
@@ -1163,7 +1187,9 @@ body {
 }
 
 .message-input::placeholder {
-  color: rgba(255, 255, 255, 0.5);
+  color: rgba(255, 255, 255, 0.3);
+  opacity: 0.7;
+  -webkit-text-fill-color: rgba(255, 255, 255, 0.3) !important;
 }
 
 .input-buttons {
@@ -1230,7 +1256,7 @@ body {
 .messages-container {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 0;
   height: 100%;
   width: 100%;
   box-sizing: border-box;
@@ -1240,7 +1266,7 @@ body {
 .message {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 0;
   width: 100%;
   box-sizing: border-box;
 }
@@ -1253,18 +1279,21 @@ body {
   align-items: stretch;
   height: 100%;
   flex: 1;
+  padding: 0;
+  margin: 0;
 }
 
 .message-content {
   width: 100%;
   max-width: 100%;
-  padding: 2px 1px;
-  border-radius: 12px;
-  font-size: 12px;
+  padding: 0;
+  border-radius: 0;
+  font-size: 14px;
   box-sizing: border-box;
-  line-height: 1.4;
+  line-height: 1.6;
   white-space: pre-wrap;
   word-wrap: break-word;
+  overflow-wrap: break-word;
 }
 
 .user-message .message-content {
@@ -1273,17 +1302,21 @@ body {
   border-bottom-right-radius: 4px;
 }
 
+/* アシスタントメッセージ専用スタイル */
 .assistant-message .message-content {
-  background: transparent;
-  color: rgba(255, 255, 255, 0.9);
-  border-radius: 0;
-  max-width: 100%;
-  width: 100%;
-  height: 100%;
-  padding: 0;
-  margin: 0;
-  border: none;
-  box-sizing: border-box;
+  background: transparent !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+  border-radius: 0 !important;
+  max-width: 100% !important;
+  width: 100% !important;
+  height: 100% !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: none !important;
+  box-sizing: border-box !important;
+  display: block !important;
+  font-size: 14px !important;
+  line-height: 1.6 !important;
 }
 
 .message-attachments {
@@ -1314,6 +1347,7 @@ body {
   border-radius: 6px;
 }
 
+/* メッセージコンテナ */
 .empty-state {
   display: flex;
   align-items: center;
@@ -1322,6 +1356,7 @@ body {
   color: rgba(255, 255, 255, 0.6);
   font-size: 12px;
   text-align: center;
+  padding: 0;
 }
 
 .error-message {
@@ -1600,3 +1635,6 @@ body {
   font-size: 13px;
   text-align: center;
 }
+
+/* LoginCard.cssのインポート */
+@import './components/LoginCard.css';

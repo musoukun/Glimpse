@@ -373,3 +373,92 @@ Tauriバージョンの詳細構造を分析し、Electronのrendererフォル�
 1. 型定義の整合性確保
 2. 既存コンポーネントの更新
 3. ローカルテスト実行 
+
+# LLM呼び出し機能実装タスク
+
+## 要件
+- 50回の呼び出しまで無料
+- それ以上呼び出す場合はStripeで4ドル月額課金
+- モデルはgemini-2.0-flash-lite
+- 認証はFirebase Authenticationを利用
+- 課金はStripeで行う
+
+## 現在の状況
+- ✅ Firebase Authentication実装済み
+- ✅ LLM呼び出しのフロントエンド実装済み
+- ✅ Supabaseテーブル作成済み
+- ✅ Edge Function修正済み（Firebase Auth専用）
+- ❌ Stripe課金システム未実装
+
+## 実装計画
+
+### フェーズ1: Supabaseデータベース設定 ✅完了
+1. ✅ 必要なテーブル作成
+   - user_usage（使用量管理）
+   - user_subscriptions（サブスクリプション管理）
+   - call_history（呼び出し履歴）
+2. ✅ Row Level Security (RLS) 設定
+3. ✅ Firebase AuthとSupabase連携（Firebase Auth専用方式）
+
+### フェーズ2: Edge Function修正 ✅完了
+1. ✅ Firebase IDトークン直接検証方式
+2. ✅ 使用量制限チェック機能
+3. ✅ Gemini API呼び出し実装（gemini-2.0-flash-lite使用）
+4. ✅ エラーハンドリング改善
+5. ✅ ユーザーサブスクリプション自動初期化
+
+### フェーズ3: Stripe課金システム実装 ⚠️準備中
+1. Stripe製品・価格設定
+2. サブスクリプション管理
+3. Webhook設定
+4. 支払いフロー実装
+
+### フェーズ4: フロントエンド統合 ⚠️準備中
+1. 使用量表示機能
+2. 課金画面実装
+3. エラーハンドリング改善
+
+## 修正内容（認証エラー対応）
+
+### 問題
+- SupabaseのOAuth認証がElectronで複雑
+- Firebase AuthとSupabaseの連携でAPIキーエラー
+
+### 解決策
+- **Firebase Authentication専用方式**に変更
+- Firebase AuthのIDトークンをEdge Functionで直接検証
+- Supabaseの認証システムを使わず、データベースのみ利用
+
+### 変更点
+1. **supabase.ts**: Supabase認証機能を削除、Edge Function呼び出し専用に
+2. **useFirebaseAuth.ts**: Supabase同期機能を削除
+3. **call-gemini Edge Function**: Firebase IDトークン直接検証方式
+4. **supabaseEdgeService.ts**: Firebase AuthのIDトークンを直接送信
+
+## 人間テストチェックポイント
+- [x] フェーズ1完了後: データベース構造確認
+- [x] フェーズ2完了後: LLM呼び出し動作確認
+- [ ] フェーズ3完了後: 課金システム動作確認
+- [ ] フェーズ4完了後: 全体統合テスト
+
+## 次のステップ
+⚠️ **人間テストが必要**: 修正後のLLM呼び出し機能をテストしてください
+
+### テスト手順
+1. アプリケーションを再起動（`npm run dev`）
+2. Firebase Authenticationでログイン
+3. LLMに質問を送信
+4. 応答が返ってくることを確認
+5. コンソールでエラーがないことを確認
+
+### 期待される動作
+- ✅ Firebase認証のみでログイン
+- ✅ LLM呼び出しが成功（gemini-2.0-flash-lite使用）
+- ✅ 使用量がデータベースに記録
+- ✅ 50回制限が適用
+- ✅ 認証エラーが解消
+
+### 修正により解決される問題
+- ❌ `Supabase Firebase Auth sync error: AuthApiError: Invalid API key`
+- ❌ 複雑なOAuthリダイレクト処理
+- ✅ シンプルなFirebase Auth専用認証 

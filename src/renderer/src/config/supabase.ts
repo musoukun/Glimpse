@@ -1,8 +1,8 @@
 import { createClient } from "@supabase/supabase-js";
 
-// Supabase設定（直接指定）
-const supabaseUrl = 'https://kafgcovlbmatojtzlxkv.supabase.co';
-const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImthZmdjb3ZsYm1hdG9qdHpseGt2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzM5NzE5NzQsImV4cCI6MjA0OTU0Nzk3NH0.Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8';
+// Supabase設定（環境変数から取得）
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://kafgcovlbmatojtzlxkv.supabase.co';
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
 // デバッグ情報
 console.log('Supabase初期化:', { supabaseUrl, hasAnonKey: !!supabaseAnonKey });
@@ -12,20 +12,65 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 	auth: {
 		autoRefreshToken: true,
 		persistSession: true,
-		detectSessionInUrl: false,
+		detectSessionInUrl: true,
+		// Electronでのリダイレクト対応
+		flowType: 'pkce',
+		storage: window.localStorage,
 	},
 });
+
+// Electron環境でのOAuth認証コールバック処理
+if (window.electron && window.api) {
+	// メインプロセスからのコールバックを受信
+	window.electron.ipcRenderer.on('auth:callback', async (event, url) => {
+		console.log('Received auth callback:', url);
+		
+		try {
+			// URLからアクセストークンを抽出
+			const urlParams = new URLSearchParams(url.split('#')[1]);
+			const access_token = urlParams.get('access_token');
+			const refresh_token = urlParams.get('refresh_token');
+			
+			if (access_token && refresh_token) {
+				// Supabaseセッションを手動で設定
+				const { data, error } = await supabase.auth.setSession({
+					access_token,
+					refresh_token
+				});
+				
+				if (error) {
+					console.error('Session set error:', error);
+				} else {
+					console.log('Session set successfully:', data);
+				}
+			}
+		} catch (error) {
+			console.error('Auth callback error:', error);
+		}
+	});
+}
 
 // 型定義
 export interface UserUsage {
 	id: string;
 	user_id: string;
-	free_calls_used: number;
-	subscription_status: "free" | "paid";
+	month: string;
+	monthly_tokens: number;
+	monthly_requests: number;
+	created_at: string;
+	updated_at: string;
+}
+
+export interface UserSubscription {
+	id: string;
+	user_id: string;
 	stripe_customer_id?: string;
-	current_period_start: string;
-	current_period_end: string;
-	last_call_at?: string;
+	stripe_subscription_id?: string;
+	plan_type: 'free' | 'paid';
+	status: 'active' | 'canceled' | 'past_due';
+	current_period_start?: string;
+	current_period_end?: string;
+	monthly_limit: number;
 	created_at: string;
 	updated_at: string;
 }
@@ -33,9 +78,10 @@ export interface UserUsage {
 export interface CallHistory {
 	id: string;
 	user_id: string;
-	prompt_length: number;
-	response_length: number;
-	tokens_used?: number;
-	call_type: string;
+	prompt: string;
+	response?: string;
+	tokens_used: number;
+	success: boolean;
+	error_message?: string;
 	created_at: string;
 }

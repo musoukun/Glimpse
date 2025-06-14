@@ -31,7 +31,7 @@ CREATE TABLE user_subscriptions (
 	stripe_customer_id VARCHAR(255),
 	stripe_subscription_id VARCHAR(255),
 	plan_type VARCHAR(50) DEFAULT 'free',
-	-- free, basic, premium
+	-- free, paid
 	status VARCHAR(50) DEFAULT 'active',
 	-- active, canceled, past_due
 	current_period_start TIMESTAMP WITH TIME ZONE,
@@ -54,6 +54,27 @@ CREATE POLICY "Users can insert own subscription" ON user_subscriptions FOR
 INSERT WITH CHECK (auth.uid() = user_id);
 CREATE POLICY "Users can update own subscription" ON user_subscriptions FOR
 UPDATE USING (auth.uid() = user_id);
+-- 呼び出し履歴テーブル
+CREATE TABLE call_history (
+	id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+	user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+	prompt TEXT NOT NULL,
+	response TEXT,
+	tokens_used INTEGER DEFAULT 0,
+	success BOOLEAN DEFAULT true,
+	error_message TEXT,
+	created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+-- インデックス作成
+CREATE INDEX idx_call_history_user_id ON call_history(user_id);
+CREATE INDEX idx_call_history_created_at ON call_history(created_at);
+-- RLS を有効化
+ALTER TABLE call_history ENABLE ROW LEVEL SECURITY;
+-- ユーザーは自分の履歴のみアクセス可能
+CREATE POLICY "Users can view own history" ON call_history FOR
+SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users can insert own history" ON call_history FOR
+INSERT WITH CHECK (auth.uid() = user_id);
 -- 更新日時を自動更新する関数
 CREATE OR REPLACE FUNCTION update_updated_at_column() RETURNS TRIGGER AS $$ BEGIN NEW.updated_at = NOW();
 RETURN NEW;

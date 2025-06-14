@@ -13,50 +13,14 @@ interface AIResponse {
 }
 
 class SupabaseEdgeService {
-  private systemPrompt: string = ''
-
-  constructor() {
-    this.updateSystemPrompt()
-    
-    // 設定変更イベントを監視
-    window.addEventListener('settings-changed', () => {
-      this.updateSystemPrompt()
-    })
-  }
-
-  private updateSystemPrompt() {
-    const settings = this.getSettings()
-    const maxChars = settings.maxChars || 500
-    const userPrompt = settings.userPrompt || ''
-
-    this.systemPrompt = `あなたは画像解析と質問回答のAIアシスタントです。
-
-以下のルールに従って回答してください：
-1. 画像のみが提供された場合：画像の内容を詳しく解説してください
-2. 画像と質問が提供された場合：質問に対して画像を参考に回答してください
-3. 回答は${maxChars}文字以内で要約してください
-4. 必ず日本語で回答してください
-5. Google検索の結果も参考にして、最新の情報を含めて回答してください
-
-${userPrompt ? `追加の指示：${userPrompt}` : ''}`
-  }
-
-  private getSettings() {
-    try {
-      const settings = localStorage.getItem('glimpse-settings')
-      return settings ? JSON.parse(settings) : {}
-    } catch (error) {
-      console.error('Failed to load settings:', error)
-      return {}
-    }
-  }
 
   async generateResponse(
     message: string,
-    images: string[] = []
+    images: string[] = [],
+    systemPrompt?: string
   ): Promise<AIResponse> {
     try {
-      // 現在のユーザーセッションを取得
+      // Supabaseの現在のセッションを取得
       const { data: { session }, error: sessionError } = await supabase.auth.getSession()
       
       if (sessionError || !session) {
@@ -66,45 +30,100 @@ ${userPrompt ? `追加の指示：${userPrompt}` : ''}`
         }
       }
 
-      // Supabase Edge Functionを呼び出し
-      const { data, error } = await supabase.functions.invoke('vertex-ai-chat', {
-        body: {
-          message,
-          images,
-          systemPrompt: this.systemPrompt,
-          model: 'gemini-2.0-flash-lite'
-        },
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-        },
+      // システムプロンプトとユーザーメッセージを結合
+      const fullMessage = systemPrompt ? `${systemPrompt}\n\nユーザーの質問: ${message}` : message
+
+      console.log('Calling Edge Function with session:', {
+        hasSession: !!session,
+        userId: session.user.id,
+        messageLength: fullMessage.length,
+        imagesCount: images.length
       })
 
-      if (error) {
-        console.error('Edge function error:', error)
-        return {
-          text: 'サーバーでエラーが発生しました。しばらく時間をおいて再試行してください。',
-          error: error.message
-        }
+      // 画像データの詳細ログ
+      if (images.length > 0) {
+        images.forEach((img, index) => {
+          console.log(`Image ${index + 1} preview:`, {
+            length: img.length,
+            startsWithData: img.startsWith('data:'),
+            mimeType: img.match(/data:([^;]+)/)?.[1],
+            first50Chars: img.substring(0, 50)
+          })
+        })
       }
 
-      if (data.error) {
-        // サーバーサイドエラーの処理
-        if (data.error.includes('limit') && data.planType === 'free') {
+      // リクエストボディを明示的に作成
+      const requestBody = {
+        message: fullMessage,
+        images
+      }
+      
+      console.log('Request body size:', JSON.stringify(requestBody).length)
+
+      // call-vertex-ai Edge Functionを呼び出し
+      try {
+        const { data, error } = await supabase.functions.invoke('call-vertex-ai', {
+          body: requestBody
+        })
+
+        // エラーハンドリングをここに移動
+        if (error) {
+          console.error('Edge function error:', error)
+          console.error('Edge function response:', data)
+          
+          // エラーメッセージを詳細に確認
+          let errorMessage = 'サーバーでエラーが発生しました。'
+          if (error.message?.includes('401')) {
+            errorMessage = '認証エラーが発生しました。再度ログインしてください。'
+          }
+          
           return {
-            text: '無料プランの制限（50回/月）に達しました。有料プラン（$4/月）にアップグレードして無制限でご利用ください。',
+            text: errorMessage,
+            error: error.message
+          }
+        }
+
+        // Edge Functionが401エラーを返した場合、dataは空の可能性がある
+        if (!data) {
+          return {
+            text: 'サーバーからの応答がありませんでした。Edge Functionが正しくデプロイされているか確認してください。',
+            error: '応答なし'
+          }
+        }
+
+        console.log('Edge Function response:', data)
+
+        if (data.error) {
+          // サーバーサイドエラーの処理
+          if (data.error.includes('制限')) {
+            return {
+              text: data.error,
+              error: data.error
+            }
+          }
+          
+          return {
+            text: 'AI応答の生成でエラーが発生しました。',
             error: data.error
           }
         }
-        
-        return {
-          text: 'AI応答の生成でエラーが発生しました。',
-          error: data.error
-        }
-      }
 
-      return {
-        text: data.text,
-        usage: data.usage
+        return {
+          text: data.text,
+          usage: {
+            tokensUsed: 0, // 今後実装予定
+            requestCount: 1,
+            currentUsage: 0, // 今後実装予定
+            monthlyLimit: 50,
+            planType: 'free'
+          }
+        }
+      } catch (err) {
+        console.error('Edge function call failed:', err)
+        return {
+          text: 'Edge Functionの呼び出しに失敗しました。ネットワーク接続を確認してください。',
+          error: err instanceof Error ? err.message : 'Unknown error'
+        }
       }
 
     } catch (error) {
@@ -125,7 +144,7 @@ ${userPrompt ? `追加の指示：${userPrompt}` : ''}`
   } | null> {
     try {
       const { data: { session } } = await supabase.auth.getSession()
-      if (!session) return null
+      if (!session?.user) return null
 
       const currentMonth = new Date().toISOString().slice(0, 7)
       

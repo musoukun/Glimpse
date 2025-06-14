@@ -17,10 +17,15 @@ export interface IApi {
 	getSettings: () => Promise<Record<string, unknown>>
 	setSettings: (settings: Record<string, unknown>) => Promise<void>
 	
-	  // OAuth認証関連（BrowserWindow方式）
-  openOAuthWindow: (oauthUrl: string) => Promise<{ success: boolean; session?: { access_token: string; refresh_token: string | null; user: { id: string } }; error?: string }>
-  openFirebaseOAuthWindow: () => Promise<{ success: boolean; user?: { uid: string; email: string | null; displayName: string | null }; error?: string }>
-  openExternal: (url: string) => Promise<boolean>
+	// Supabase Auth関連
+	openAuthWindow: (provider: string) => Promise<{ error: any | null }>
+	authSuccess: (authData: any) => Promise<boolean>
+	authSignOut: () => Promise<boolean>
+	
+	// OAuth認証関連（後方互換性）
+	openOAuthWindow: (oauthUrl: string) => Promise<{ success: boolean; session?: { access_token: string; refresh_token: string | null; user: { id: string } }; error?: string }>
+	openFirebaseOAuthWindow: () => Promise<{ success: boolean; user?: { uid: string; email: string | null; displayName: string | null }; error?: string }>
+	openExternal: (url: string) => Promise<boolean>
 	
 	// Firebase関連（後方互換性のため保持）
 	firebaseAuth: (action: string, data?: Record<string, unknown>) => Promise<unknown>

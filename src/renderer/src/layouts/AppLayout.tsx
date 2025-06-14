@@ -7,15 +7,14 @@ import SettingsModal from "../components/SettingsModal";
 import { useAttachments } from "../hooks/useAttachments";
 import { useLLM } from "../hooks/useLLM";
 // import { useFirebaseAuth } from "../hooks/useFirebaseAuth";
-import { useUsage } from "../hooks/useUsage";
 import type { Message, Attachment } from "../types";
 import "../assets/ai-chat.css";
 
 export const AppLayout: React.FC = () => {
 	const [messages, setMessages] = useState<Message[]>([]);
 	const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+	const [isThinking, setIsThinking] = useState(false);
 	// const { user, loading: authLoading } = useFirebaseAuth();
-	const { usage, loading: usageLoading } = useUsage();
 	const { callLLM, loading: llmLoading } = useLLM();
 
 	// useAttachmentsフックを使用
@@ -32,11 +31,15 @@ export const AppLayout: React.FC = () => {
 		message: string,
 		attachments: Attachment[]
 	) => {
-		if (!message.trim()) return;
+		// メッセージが空でも画像があれば送信を許可
+		if (!message.trim() && attachments.length === 0) return;
+
+		// 画像のみの場合はデフォルトメッセージを設定
+		const finalMessage = message.trim() || "画像を解析してください";
 
 		const userMessage: Message = {
 			id: Date.now().toString(),
-			content: message,
+			content: finalMessage,
 			role: "user",
 			timestamp: new Date(),
 			attachments,
@@ -44,9 +47,10 @@ export const AppLayout: React.FC = () => {
 
 		setMessages((prev) => [...prev, userMessage]);
 		clearAttachments();
+		setIsThinking(true);
 
 		try {
-			const response = await callLLM(message, attachments);
+			const response = await callLLM(finalMessage, attachments);
 
 			const assistantMessage: Message = {
 				id: (Date.now() + 1).toString(),
@@ -66,6 +70,8 @@ export const AppLayout: React.FC = () => {
 			};
 
 			setMessages((prev) => [...prev, errorMessage]);
+		} finally {
+			setIsThinking(false);
 		}
 	};
 
@@ -99,7 +105,7 @@ export const AppLayout: React.FC = () => {
 				>
 					<MainInputSection
 						onSendMessage={handleSendMessage}
-						disabled={llmLoading || usageLoading}
+						disabled={llmLoading}
 						attachments={attachments}
 						onAddAttachment={addAttachment}
 						onAddFromClipboard={addFromClipboard}
@@ -113,9 +119,7 @@ export const AppLayout: React.FC = () => {
 				<div className="response-area">
 					<MainResponseSection
 						messages={messages}
-						loading={llmLoading}
-						usage={usage}
-						usageLoading={usageLoading}
+						loading={llmLoading || isThinking}
 					/>
 				</div>
 			</main>

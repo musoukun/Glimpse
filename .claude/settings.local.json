@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(rm:*)",
+      "Bash(rg:*)"
+    ]
+  },
+  "enabledMcpjsonServers": [
+    "brave-search",
+    "git",
+    "github",
+    "discord",
+    "filesystem",
+    "Context7",
+    "scrapy-mcp",
+    "rag-server",
+    "powerpoint-generator",
+    "mastra",
+    "stripe"
+  ]
+}

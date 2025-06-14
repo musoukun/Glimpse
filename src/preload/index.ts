@@ -13,7 +13,12 @@ const api = {
 	setSettings: (settings: Record<string, unknown>) =>
 		ipcRenderer.invoke("set-settings", settings),
 
-	// OAuth認証関連のAPI（BrowserWindow方式）
+	// Supabase Auth関連のAPI
+	openAuthWindow: (provider: string) => ipcRenderer.invoke("auth:open-window", provider),
+	authSuccess: (authData: any) => ipcRenderer.invoke("auth:success", authData),
+	authSignOut: () => ipcRenderer.invoke("auth:signout"),
+	
+	// OAuth認証関連のAPI（後方互換性）
 	openOAuthWindow: (oauthUrl: string) => ipcRenderer.invoke("oauth:open-window", oauthUrl),
 	openFirebaseOAuthWindow: () => ipcRenderer.invoke("firebase:oauth-window"),
 	openExternal: (url: string) => ipcRenderer.invoke("oauth:open-external", url),

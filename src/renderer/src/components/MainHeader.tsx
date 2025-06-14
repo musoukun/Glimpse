@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect } from "react";
 import { Settings, LogOut, Maximize2, X } from "lucide-react";
-import { useFirebaseAuth } from "../hooks/useFirebaseAuth";
+import { useSupabaseAuth } from "../hooks/useSupabaseAuth";
 
 interface MainHeaderProps {
 	onSettingsClick?: () => void;
@@ -11,7 +11,7 @@ type WindowSize = "small" | "medium" | "large";
 export const MainHeader: React.FC<MainHeaderProps> = ({ onSettingsClick }) => {
 	const [opacity, setOpacity] = useState(1.0);
 	const [currentSize, setCurrentSize] = useState<WindowSize>("small");
-	const { signOut } = useFirebaseAuth();
+	const { signOut } = useSupabaseAuth();
 
 	const handleOpacityChange = useCallback(
 		(event: React.ChangeEvent<HTMLInputElement>) => {

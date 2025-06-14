@@ -1,13 +1,13 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useCallback } from 'react'
-import { useFirebaseAuth } from './useFirebaseAuth'
-import { useUsage } from './useUsage'
+import { useSupabaseAuth } from './useSupabaseAuth'
 import { aiLogicService } from '../services/aiLogic'
 import type { Attachment } from '../types'
 import Logger from '../utils/logger'
 
 export const useLLM = () => {
-  const { user } = useFirebaseAuth()
-  const { canMakeCall, fetchUsage } = useUsage()
+  const { user } = useSupabaseAuth()
+
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -17,9 +17,6 @@ export const useLLM = () => {
       throw new Error('認証が必要です。ログインしてください。')
     }
 
-    if (!canMakeCall()) {
-      throw new Error('使用制限に達しています。アップグレードしてください。')
-    }
 
     try {
       setLoading(true)
@@ -47,8 +44,6 @@ export const useLLM = () => {
         usage: response.usage
       })
 
-      // 使用量を更新
-      await fetchUsage()
 
       return response.text
     } catch (error) {
@@ -59,7 +54,7 @@ export const useLLM = () => {
     } finally {
       setLoading(false)
     }
-  }, [user, canMakeCall, fetchUsage])
+  }, [user])
 
   return {
     callLLM,

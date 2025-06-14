@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { useFirebaseAuth } from './useFirebaseAuth'
+import { useSupabaseAuth } from './useSupabaseAuth'
 import { aiLogicService } from '../services/aiLogic'
 import Logger from '../utils/logger'
 
@@ -11,7 +11,8 @@ interface Usage {
 }
 
 export const useUsage = () => {
-  const { user } = useFirebaseAuth()
+  const { user } = useSupabaseAuth()
+  
   const isAuthenticated = !!user
   const [usage, setUsage] = useState<Usage | null>(null)
   const [loading, setLoading] = useState(false)
