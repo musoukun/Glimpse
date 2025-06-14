@@ -1,12 +1,19 @@
 import { useState, useEffect, useCallback } from 'react'
-import { supabase, UserUsage } from '../config/supabase'
 import { useFirebaseAuth } from './useFirebaseAuth'
+import { aiLogicService } from '../services/aiLogic'
 import Logger from '../utils/logger'
+
+interface Usage {
+  monthlyTokens: number
+  monthlyRequests: number
+  limit: number
+  planType: string
+}
 
 export const useUsage = () => {
   const { user } = useFirebaseAuth()
   const isAuthenticated = !!user
-  const [usage, setUsage] = useState<UserUsage | null>(null)
+  const [usage, setUsage] = useState<Usage | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -21,41 +28,23 @@ export const useUsage = () => {
       setLoading(true)
       setError(null)
 
-      const { data, error: fetchError } = await supabase
-        .from('user_usage')
-        .select('*')
-        .eq('user_id', user.uid)
-        .single()
-
-      if (fetchError) {
-        if (fetchError.code === 'PGRST116') {
-          // レコードが存在しない場合は新規作成
-          const { data: newUsage, error: insertError } = await supabase
-            .from('user_usage')
-            .insert({
-              user_id: user.uid,
-              free_calls_used: 0,
-              subscription_status: 'free',
-              current_period_start: new Date().toISOString(),
-              current_period_end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
-            })
-            .select()
-            .single()
-
-          if (insertError) {
-            throw insertError
-          }
-
-          setUsage(newUsage)
-          Logger.info('USAGE', '新規使用量レコード作成完了')
-        } else {
-          throw fetchError
-        }
-      } else {
-        setUsage(data)
+      const usageData = await aiLogicService.getUsage()
+      
+      if (usageData) {
+        setUsage(usageData)
         Logger.info('USAGE', '使用量取得完了', { 
-          freeCallsUsed: data.free_calls_used,
-          subscriptionStatus: data.subscription_status 
+          monthlyRequests: usageData.monthlyRequests,
+          monthlyTokens: usageData.monthlyTokens,
+          limit: usageData.limit,
+          planType: usageData.planType
+        })
+      } else {
+        // 初回の場合はデフォルト値を設定
+        setUsage({
+          monthlyTokens: 0,
+          monthlyRequests: 0,
+          limit: 50,
+          planType: 'free'
         })
       }
     } catch (error) {
@@ -75,20 +64,20 @@ export const useUsage = () => {
   // 使用量の計算
   const getUsagePercentage = useCallback(() => {
     if (!usage) return 0
-    if (usage.subscription_status === 'paid') return 0 // 有料プランは制限なし
-    return Math.min((usage.free_calls_used / 50) * 100, 100)
+    if (usage.planType === 'paid') return 0 // 有料プランは制限なし
+    return Math.min((usage.monthlyRequests / usage.limit) * 100, 100)
   }, [usage])
 
   const getRemainingCalls = useCallback(() => {
     if (!usage) return 0
-    if (usage.subscription_status === 'paid') return Infinity
-    return Math.max(50 - usage.free_calls_used, 0)
+    if (usage.planType === 'paid') return Infinity // 有料プランは無制限
+    return Math.max(usage.limit - usage.monthlyRequests, 0)
   }, [usage])
 
   const canMakeCall = useCallback(() => {
     if (!usage) return false
-    if (usage.subscription_status === 'paid') return true
-    return usage.free_calls_used < 50
+    if (usage.planType === 'paid') return true // 有料プランは常に可能
+    return usage.monthlyRequests < usage.limit
   }, [usage])
 
   const getUsageStatus = useCallback(() => {
@@ -97,6 +86,8 @@ export const useUsage = () => {
     if (error) return 'error'
     if (!usage) return 'loading'
 
+    if (usage.planType === 'paid') return 'unlimited'
+    
     const percentage = getUsagePercentage()
     if (percentage >= 100) return 'limit_exceeded'
     if (percentage >= 80) return 'warning'
