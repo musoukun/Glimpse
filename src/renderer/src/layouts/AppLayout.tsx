@@ -3,10 +3,10 @@ import { MainHeader } from "../components/MainHeader";
 import { MainInputSection } from "../components/MainInputSection";
 import { MainResponseSection } from "../components/MainResponseSection";
 import SettingsModal from "../components/SettingsModal";
-import { AuthLayout } from "./AuthLayout";
+// import { AuthLayout } from "./AuthLayout";
 import { useAttachments } from "../hooks/useAttachments";
 import { useLLM } from "../hooks/useLLM";
-import { useFirebaseAuth } from "../hooks/useFirebaseAuth";
+// import { useFirebaseAuth } from "../hooks/useFirebaseAuth";
 import { useUsage } from "../hooks/useUsage";
 import type { Message, Attachment } from "../types";
 import "../assets/ai-chat.css";
@@ -14,7 +14,7 @@ import "../assets/ai-chat.css";
 export const AppLayout: React.FC = () => {
 	const [messages, setMessages] = useState<Message[]>([]);
 	const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-	const { user, loading: authLoading } = useFirebaseAuth();
+	// const { user, loading: authLoading } = useFirebaseAuth();
 	const { usage, loading: usageLoading } = useUsage();
 	const { callLLM, loading: llmLoading } = useLLM();
 
@@ -69,22 +69,22 @@ export const AppLayout: React.FC = () => {
 		}
 	};
 
+	// 一時的に認証チェックを無効化してFirebase AIをテスト
 	// 認証中の場合
-	if (authLoading) {
-		return (
-			<div className="main-app-layout">
-				<div className="loading-message">
-					<div className="spinner"></div>
-					認証状態を確認中...
-				</div>
-			</div>
-		);
-	}
+	// if (authLoading) {
+	// 	return (
+	// 		<div className="main-app-layout">
+	// 			<div className="loading-message">
+	// 				<div className="spinner"></div>
+	// 				認証状態を確認中...
+	// 			</div>
+	// 		);
+	// }
 
 	// 未認証の場合
-	if (!user) {
-		return <AuthLayout />;
-	}
+	// if (!user) {
+	// 	return <AuthLayout />;
+	// }
 
 	return (
 		<div className="main-app-layout">
@@ -94,7 +94,9 @@ export const AppLayout: React.FC = () => {
 			{/* メインコンテンツ */}
 			<main className="main-content">
 				{/* 入力エリア */}
-				<div className="input-area">
+				<div
+					className={`input-area ${attachments.length > 0 ? "has-attachments" : ""}`}
+				>
 					<MainInputSection
 						onSendMessage={handleSendMessage}
 						disabled={llmLoading || usageLoading}

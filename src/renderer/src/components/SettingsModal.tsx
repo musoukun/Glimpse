@@ -14,6 +14,7 @@ interface AppSettings {
 	response_settings: {
 		max_characters: number;
 		response_language: string;
+		user_prompt: string;
 	};
 }
 
@@ -33,8 +34,11 @@ function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 		setLoading(true);
 		setError("");
 		try {
+			// ローカルストレージから設定を読み込み
+			const savedSettings = localStorage.getItem("glimpse_settings");
+
 			// デフォルト設定
-			const currentSettings: AppSettings = {
+			const defaultSettings: AppSettings = {
 				ui_settings: {
 					window_size: "small",
 					opacity: 0.9,
@@ -42,10 +46,27 @@ function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 				response_settings: {
 					max_characters: 300,
 					response_language: "日本語",
+					user_prompt: "",
 				},
 			};
 
-			setSettings(currentSettings);
+			if (savedSettings) {
+				const parsed = JSON.parse(savedSettings);
+				// デフォルト設定とマージ
+				const currentSettings: AppSettings = {
+					ui_settings: {
+						...defaultSettings.ui_settings,
+						...parsed.ui_settings,
+					},
+					response_settings: {
+						...defaultSettings.response_settings,
+						...parsed.response_settings,
+					},
+				};
+				setSettings(currentSettings);
+			} else {
+				setSettings(defaultSettings);
+			}
 		} catch (err) {
 			console.error("設定読み込み失敗", err);
 			setError("設定の読み込みに失敗しました: " + String(err));
@@ -60,6 +81,16 @@ function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 		setSaving(true);
 		setError("");
 		try {
+			// ローカルストレージに設定を保存
+			localStorage.setItem("glimpse_settings", JSON.stringify(settings));
+
+			// 設定変更イベントを発火
+			window.dispatchEvent(
+				new CustomEvent("settings-changed", {
+					detail: settings,
+				})
+			);
+
 			console.log("設定保存:", settings);
 			onClose();
 		} catch (err) {
@@ -223,6 +254,27 @@ function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 										<option value="English">English</option>
 										<option value="自動">自動</option>
 									</select>
+								</div>
+
+								<div className="form-group">
+									<label>追加プロンプト</label>
+									<textarea
+										value={
+											settings.response_settings
+												.user_prompt
+										}
+										onChange={(e) =>
+											updateResponseSetting(
+												"user_prompt",
+												e.target.value
+											)
+										}
+										placeholder="システムプロンプトに追加したい指示を入力してください"
+										rows={3}
+									/>
+									<small>
+										ここに入力した内容がシステムプロンプトの末尾に追加されます
+									</small>
 								</div>
 							</div>
 						</>

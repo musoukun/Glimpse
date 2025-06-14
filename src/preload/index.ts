@@ -62,7 +62,7 @@ if (process.contextIsolated) {
 		console.log("Preload: Verifying API exposure...");
 	} catch (error) {
 		console.error("Preload: Error exposing APIs:", error);
-		console.error("Preload: Error details:", error.message, error.stack);
+		
 	}
 } else {
 	console.log("Preload: Context isolation disabled, adding to window");

@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase, UserUsage } from '../config/supabase'
-import { useAuth } from './useAuth'
+import { useFirebaseAuth } from './useFirebaseAuth'
 import Logger from '../utils/logger'
 
 export const useUsage = () => {
-  const { user, isAuthenticated } = useAuth()
+  const { user } = useFirebaseAuth()
+  const isAuthenticated = !!user
   const [usage, setUsage] = useState<UserUsage | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -23,7 +24,7 @@ export const useUsage = () => {
       const { data, error: fetchError } = await supabase
         .from('user_usage')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', user.uid)
         .single()
 
       if (fetchError) {
@@ -32,7 +33,7 @@ export const useUsage = () => {
           const { data: newUsage, error: insertError } = await supabase
             .from('user_usage')
             .insert({
-              user_id: user.id,
+              user_id: user.uid,
               free_calls_used: 0,
               subscription_status: 'free',
               current_period_start: new Date().toISOString(),

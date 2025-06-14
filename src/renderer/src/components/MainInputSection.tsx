@@ -26,26 +26,27 @@ export const MainInputSection: React.FC<MainInputSectionProps> = ({
 	const [message, setMessage] = useState("");
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-	// サムネイル表示を考慮した入力欄の高さ調整
-	const getInputHeight = useCallback(() => {
-		const hasAttachments = attachments.length > 0;
-		if (hasAttachments) {
-			// サムネイルがある場合は入力欄を小さくする
-			return "60px";
-		}
-		// サムネイルがない場合は適度なサイズ
-		return "100px";
-	}, [attachments.length]);
-
 	// テキストエリアの高さを自動調整
 	const adjustTextareaHeight = useCallback(() => {
 		const textarea = textareaRef.current;
 		if (textarea) {
+			// 高さをリセット
 			textarea.style.height = "auto";
-			const maxHeight = parseInt(getInputHeight(), 10);
-			textarea.style.height = `${Math.min(textarea.scrollHeight, maxHeight)}px`;
+
+			// 最小・最大高さを設定
+			const minHeight = 40;
+			const maxHeight = attachments.length > 0 ? 80 : 120;
+
+			// スクロール高さに基づいて調整
+			const scrollHeight = textarea.scrollHeight;
+			const newHeight = Math.max(
+				minHeight,
+				Math.min(scrollHeight, maxHeight)
+			);
+
+			textarea.style.height = `${newHeight}px`;
 		}
-	}, [getInputHeight]);
+	}, [attachments.length]);
 
 	// メッセージが変更されたときにテキストエリアの高さを調整
 	useEffect(() => {
@@ -113,8 +114,8 @@ export const MainInputSection: React.FC<MainInputSectionProps> = ({
 					className="message-input"
 					disabled={disabled}
 					style={{
-						minHeight: getInputHeight(),
-						maxHeight: getInputHeight(),
+						minHeight: "40px",
+						resize: "none",
 					}}
 				/>
 				<div className="input-buttons">

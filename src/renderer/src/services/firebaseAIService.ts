@@ -1,4 +1,4 @@
-import { initializeApp, FirebaseApp } from "firebase/app";
+import { FirebaseApp } from "firebase/app";
 import {
   HarmCategory,
   HarmBlockThreshold,
@@ -18,12 +18,10 @@ import {
   GoogleAIBackend,
 } from "firebase/ai";
 
-import { firebaseConfig } from "../config/firebase";
+import firebaseApp from "../config/firebase";
 
 export const AVAILABLE_GENERATIVE_MODELS = [
-  "gemini-2.0-flash",
   "gemini-2.0-flash-lite",
-  "gemini-2.0-flash-exp",
 ];
 export const AVAILABLE_IMAGEN_MODELS = ["imagen-3.0-generate-002"];
 
@@ -31,12 +29,7 @@ let app: FirebaseApp;
 let aiInstance: AI;
 
 try {
-  if (firebaseConfig.apiKey === "AIzaSyBKqJqXqJqXqJqXqJqXqJqXqJqXqJqXqJq" || !firebaseConfig.projectId) {
-    console.error(
-      "Firebase AI config uses placeholder values. Update src/config/firebase-ai-config.ts.",
-    );
-  }
-  app = initializeApp(firebaseConfig);
+  app = firebaseApp;
   
   // AI インスタンスを初期化
   const backend = new GoogleAIBackend();
@@ -91,8 +84,8 @@ export const defaultGenerativeParams: Omit<ModelParams, "model"> = {
       category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
       threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
     },
-  ],
-  // tools, toolConfig, systemInstruction default to undefined
+  ]
+  // toolConfig, systemInstruction default to undefined
 };
 
 export const defaultImagenParams: Omit<ImagenModelParams, "model"> = {

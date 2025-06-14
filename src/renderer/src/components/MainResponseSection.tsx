@@ -80,54 +80,23 @@ export const MainResponseSection: React.FC<MainResponseSectionProps> = ({
 			{renderUsageInfo()}
 
 			<div className="response-content-area">
-				{/* メッセージ履歴 */}
+				{/* 回答履歴（最新の回答のみ表示） */}
 				{messages.length > 0 ? (
 					<div className="messages-container">
-						{messages.map((message) => (
-							<div
-								key={message.id}
-								className={`message ${message.role === "user" ? "user-message" : "assistant-message"} ${message.isError ? "error-message" : ""}`}
-							>
-								<div className="message-content">
-									{message.content}
+						{/* アシスタントの回答のみを表示 */}
+						{messages
+							.filter((message) => message.role === "assistant")
+							.slice(-1) // 最新の回答のみ
+							.map((message) => (
+								<div
+									key={message.id}
+									className={`message assistant-message ${message.isError ? "error-message" : ""}`}
+								>
+									<div className="message-content">
+										{message.content}
+									</div>
 								</div>
-								{message.attachments &&
-									message.attachments.length > 0 && (
-										<div className="message-attachments">
-											{message.attachments.map(
-												(attachment) => (
-													<div
-														key={attachment.id}
-														className="message-attachment"
-													>
-														{attachment.type.startsWith(
-															"image/"
-														) ? (
-															<img
-																src={
-																	attachment.data
-																}
-																alt={
-																	attachment.name
-																}
-																className="attachment-image"
-															/>
-														) : (
-															<div className="attachment-file">
-																<span>
-																	{
-																		attachment.name
-																	}
-																</span>
-															</div>
-														)}
-													</div>
-												)
-											)}
-										</div>
-									)}
-							</div>
-						))}
+							))}
 					</div>
 				) : (
 					<div className="empty-state">

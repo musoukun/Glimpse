@@ -1,54 +1,50 @@
-# React + TypeScript + Vite
+# Glimpse
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Glimpse は AI チャット機能を搭載した Electron デスクトップアプリケーションです。
 
-Currently, two official plugins are available:
+## 主な機能
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- **AI チャット**: Vertex AI API (Gemini) を使用した AI 応答生成
+- **Google 検索 (Grounding)**: AI 応答にリアルタイムの検索結果を統合
+- **画像添付**: 画像ファイルを添付して AI に質問可能
+- **カスタマイズ可能な設定**: 応答文字数、言語、カスタムプロンプトの設定
+- **ウィンドウサイズ調整**: 3段階のサイズ切り替え (small/medium/large)
+- **透明度調整**: ウィンドウの透明度をカスタマイズ可能
 
-## Expanding the ESLint configuration
+## セットアップ方法
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default tseslint.config({
-  extends: [
-    // Remove ...tseslint.configs.recommended and replace with this
-    ...tseslint.configs.recommendedTypeChecked,
-    // Alternatively, use this for stricter rules
-    ...tseslint.configs.strictTypeChecked,
-    // Optionally, add this for stylistic rules
-    ...tseslint.configs.stylisticTypeChecked,
-  ],
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
+### 1. 依存関係のインストール
+```bash
+npm install
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default tseslint.config({
-  plugins: {
-    // Add the react-x and react-dom plugins
-    'react-x': reactX,
-    'react-dom': reactDom,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended typescript rules
-    ...reactX.configs['recommended-typescript'].rules,
-    ...reactDom.configs.recommended.rules,
-  },
-})
+### 2. Google AI API キーの設定
+1. [Google Cloud Console](https://console.cloud.google.com/apis/credentials) でAPIキーを取得
+2. プロジェクトルートに `.env` ファイルを作成
+3. 以下の内容を追加:
 ```
+VITE_GOOGLE_AI_API_KEY=your_google_ai_api_key_here
+```
+
+### 3. アプリケーションの起動
+```bash
+npm run dev
+```
+
+## 機能の概要
+
+### AI チャット機能
+- **モデル**: Gemini 2.0 Flash Lite を使用
+- **Grounding**: Google 検索結果を統合したリアルタイム情報取得
+- **画像解析**: 添付された画像の内容を解析・説明
+- **カスタムプロンプト**: ユーザー独自の指示をシステムプロンプトに追加可能
+
+### ユーザーインターフェース
+- **フレームレスウィンドウ**: モダンなデザインのカスタムウィンドウ
+- **動的入力欄**: テキスト量に応じて自動サイズ調整
+- **添付ファイル表示**: ドラッグ&ドロップでファイル添付
+- **設定モーダル**: リアルタイムで設定変更が反映
+
+## ライセンス
+
+MIT License
