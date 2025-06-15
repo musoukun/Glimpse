@@ -438,7 +438,7 @@ function UpdateSection() {
 
 	useEffect(() => {
 		// package.jsonからバージョンを取得するか、デフォルト値を使用
-		setCurrentVersion('0.1.0'); // TODO: 実際のバージョンを取得
+		setCurrentVersion('0.1.1'); // TODO: 実際のバージョンを取得
 	}, []);
 
 	const handleCheckUpdate = async () => {

@@ -74,6 +74,9 @@ export interface IApi {
 	
 	// ショートカット関連
 	updateGlobalShortcut: (shortcut: string) => Promise<boolean>
+	
+	// 汎用的なinvokeメソッド（開発テスト用）
+	invoke: (channel: string, ...args: any[]) => Promise<any>
 }
 
 export interface UpdateInfo {

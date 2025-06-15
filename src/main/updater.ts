@@ -9,13 +9,11 @@ export interface UpdateInfo {
 }
 
 export function setupAutoUpdater(mainWindow: BrowserWindow) {
-  // 開発環境でのチェック
-  const isDev = process.env.NODE_ENV === 'development' || !mainWindow.webContents.getURL().startsWith('file://');
+  console.log('Setting up auto-updater...');
   
-  if (isDev) {
-    console.log('Development mode: Auto-update features are limited');
-  }
-
+  // プレリリースも含めて更新をチェック
+  autoUpdater.allowPrerelease = true;
+  
   // 自動ダウンロードを無効化（ユーザーが手動で更新を選択）
   autoUpdater.autoDownload = false;
   autoUpdater.autoInstallOnAppQuit = true;
@@ -65,12 +63,6 @@ export function setupAutoUpdater(mainWindow: BrowserWindow) {
   // IPCハンドラー：更新チェック
   ipcMain.handle('update:check', async () => {
     try {
-      if (isDev) {
-        // 開発環境では模擬的な結果を返す
-        console.log('Skipping update check in development mode');
-        mainWindow.webContents.send('update:not-available');
-        return { success: true, data: null };
-      }
       const result = await autoUpdater.checkForUpdates();
       return { success: true, data: result };
     } catch (error) {
@@ -82,10 +74,6 @@ export function setupAutoUpdater(mainWindow: BrowserWindow) {
   // IPCハンドラー：更新ダウンロード開始
   ipcMain.handle('update:download', async () => {
     try {
-      if (isDev) {
-        console.log('Skipping update download in development mode');
-        return { success: false, error: '開発環境では更新できません' };
-      }
       await autoUpdater.downloadUpdate();
       return { success: true };
     } catch (error) {
@@ -97,11 +85,6 @@ export function setupAutoUpdater(mainWindow: BrowserWindow) {
   // IPCハンドラー：更新インストール
   ipcMain.handle('update:install', async () => {
     try {
-      if (isDev) {
-        console.log('Skipping update install in development mode');
-        return { success: false, error: '開発環境では更新できません' };
-      }
-      
       // ユーザーに確認
       const response = await dialog.showMessageBox(mainWindow, {
         type: 'question',
@@ -121,15 +104,13 @@ export function setupAutoUpdater(mainWindow: BrowserWindow) {
     }
   });
 
-  // 初回チェック（開発環境では実行しない）
-  if (!isDev) {
-    setTimeout(() => {
-      autoUpdater.checkForUpdates().catch(console.error);
-    }, 3000);
+  // 初回チェック
+  setTimeout(() => {
+    autoUpdater.checkForUpdates().catch(console.error);
+  }, 3000);
 
-    // 定期チェック（1時間ごと）
-    setInterval(() => {
-      autoUpdater.checkForUpdates().catch(console.error);
-    }, 60 * 60 * 1000);
-  }
+  // 定期チェック（1時間ごと）
+  setInterval(() => {
+    autoUpdater.checkForUpdates().catch(console.error);
+  }, 60 * 60 * 1000);
 }
