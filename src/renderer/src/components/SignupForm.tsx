@@ -195,17 +195,16 @@ function SignupForm({
 					</div>
 				</div>
 
-				<div className="form-group">
-					<label className="checkbox-label" style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
-						<input
-							type="checkbox"
-							checked={agreeToTerms}
-							onChange={(e) => setAgreeToTerms(e.target.checked)}
-							style={{ cursor: 'pointer' }}
-						/>
-						<span style={{ fontSize: '0.875rem', color: '#888' }}>
-							<a href="#" style={{ color: '#60a5fa' }}>利用規約</a>に同意します
-						</span>
+				<div className="checkbox-wrapper">
+					<input
+						type="checkbox"
+						id="agreeToTerms"
+						className="checkbox-input"
+						checked={agreeToTerms}
+						onChange={(e) => setAgreeToTerms(e.target.checked)}
+					/>
+					<label htmlFor="agreeToTerms" className="checkbox-label">
+						<a href="#">利用規約</a>に同意します
 					</label>
 				</div>
 

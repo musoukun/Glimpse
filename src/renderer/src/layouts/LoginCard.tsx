@@ -4,7 +4,11 @@ import { Loader2 } from "lucide-react";
 import "./LoginCard.css";
 
 interface LoginCardProps {
-	onEmailLogin?: (email: string, password: string, rememberMe: boolean) => Promise<void>;
+	onEmailLogin?: (
+		email: string,
+		password: string,
+		rememberMe: boolean
+	) => Promise<void>;
 	onGoogleLogin?: () => Promise<void>;
 	onSwitchToSignup?: () => void;
 	loading?: boolean;
@@ -22,7 +26,9 @@ function LoginCard({
 }: LoginCardProps) {
 	const [email, setEmail] = useState(initialEmail);
 	const [password, setPassword] = useState(initialPassword);
-	const [rememberMe, setRememberMe] = useState(initialEmail !== "" && initialPassword !== "");
+	const [rememberMe, setRememberMe] = useState(
+		initialEmail !== "" && initialPassword !== ""
+	);
 	const [isLoading, setIsLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 
@@ -90,7 +96,7 @@ function LoginCard({
 	return (
 		<div className="login-card">
 			<div className="login-header">
-				<h1 className="login-title">Welcome back</h1>
+				<h1 className="login-title">Glimpse</h1>
 				<p className="login-subtitle">Sign in to your account</p>
 			</div>
 
@@ -131,17 +137,16 @@ function LoginCard({
 					</div>
 				</div>
 
-				<div className="form-group">
-					<label className="checkbox-label" style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
-						<input
-							type="checkbox"
-							checked={rememberMe}
-							onChange={(e) => setRememberMe(e.target.checked)}
-							style={{ cursor: 'pointer' }}
-						/>
-						<span style={{ fontSize: '0.875rem', color: '#888' }}>
-							ログイン情報を保存する
-						</span>
+				<div className="checkbox-wrapper">
+					<input
+						type="checkbox"
+						id="rememberMe"
+						className="checkbox-input"
+						checked={rememberMe}
+						onChange={(e) => setRememberMe(e.target.checked)}
+					/>
+					<label htmlFor="rememberMe" className="checkbox-label">
+						ログイン情報を保存する
 					</label>
 				</div>
 
@@ -195,7 +200,7 @@ function LoginCard({
 			</button>
 
 			<div className="login-footer">
-				<p className="footer-text" style={{ marginBottom: '8px' }}>
+				<p className="footer-text" style={{ marginBottom: "8px" }}>
 					By continuing, you agree to our{" "}
 					<a href="#" className="footer-link">
 						Terms of Service
@@ -210,13 +215,13 @@ function LoginCard({
 					<button
 						onClick={onSwitchToSignup}
 						style={{
-							background: 'none',
-							border: 'none',
-							color: '#60a5fa',
-							cursor: 'pointer',
-							textDecoration: 'underline',
+							background: "none",
+							border: "none",
+							color: "#60a5fa",
+							cursor: "pointer",
+							textDecoration: "underline",
 							padding: 0,
-							font: 'inherit',
+							font: "inherit",
 						}}
 					>
 						新規作成
