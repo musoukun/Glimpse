@@ -22,7 +22,7 @@ const api = {
 	openExternal: (url: string) => ipcRenderer.invoke("oauth:open-external", url),
 
 	// ファイル関連のAPI
-	selectFile: () => ipcRenderer.invoke("select-file"),
+	selectFile: () => ipcRenderer.invoke("file:select"),
 	readFile: (filePath: string) => ipcRenderer.invoke("read-file", filePath),
 
 	// スクリーンショット関連のAPI

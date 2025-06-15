@@ -12,6 +12,10 @@
 		"preview": "electron-vite preview",
 		"lint": "eslint .",
 		"package": "electron-builder",
+		"package:mac": "electron-builder --mac",
+		"package:win": "electron-builder --win",
+		"package:linux": "electron-builder --linux",
+		"package:all": "node build-all.js --all",
 		"create-uninstaller": "node build/create-uninstaller.js"
 	},
 	"dependencies": {
@@ -83,7 +87,41 @@
 		},
 		"mac": {
 			"icon": "build/icon.png",
-			"category": "public.app-category.productivity"
+			"category": "public.app-category.productivity",
+			"identity": null,
+			"target": [
+				{
+					"target": "dmg",
+					"arch": ["x64", "arm64"]
+				}
+			],
+			"hardenedRuntime": false,
+			"gatekeeperAssess": false,
+			"entitlements": "build/entitlements.mac.plist",
+			"entitlementsInherit": "build/entitlements.mac.plist",
+			"extendInfo": {
+				"NSCameraUsageDescription": "Allow Glimpse to capture screenshots for AI assistance",
+				"NSScreenCaptureDescription": "Allow Glimpse to capture screen content for AI assistance"
+			}
+		},
+		"dmg": {
+			"iconSize": 100,
+			"contents": [
+				{
+					"x": 130,
+					"y": 220
+				},
+				{
+					"x": 410,
+					"y": 220,
+					"type": "link",
+					"path": "/Applications"
+				}
+			],
+			"window": {
+				"width": 540,
+				"height": 380
+			}
 		},
 		"linux": {
 			"icon": "build/icon.png",

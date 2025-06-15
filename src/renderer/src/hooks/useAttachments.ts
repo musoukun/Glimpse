@@ -1,6 +1,7 @@
 import { useState, useCallback } from "react";
 import type { Attachment } from "../types/index";
 import Logger from "../utils/logger";
+import { getFileValidationError } from "../utils/fileValidation";
 
 const MAX_ATTACHMENTS = 4;
 
@@ -16,6 +17,20 @@ export const useAttachments = () => {
 			);
 			return;
 		}
+		
+		// ファイルバリデーション
+		const validationError = getFileValidationError(
+			attachment.type,
+			attachment.size,
+			attachment.name
+		);
+		
+		if (validationError) {
+			Logger.error("ATTACHMENTS", validationError);
+			window.alert(validationError);
+			return;
+		}
+		
 		setAttachments((prev) => [...prev, attachment]);
 		Logger.info("ATTACHMENTS", `ファイル追加完了: ${attachment.name}`);
 	}, [attachments.length]);
@@ -52,6 +67,20 @@ export const useAttachments = () => {
 					"ATTACHMENTS",
 					"ファイル選択がキャンセルされました"
 				);
+				return;
+			}
+
+			// ファイルバリデーション
+			const validationError = getFileValidationError(
+				result.mimeType,
+				result.fileSize,
+				result.fileName
+			);
+			
+			if (validationError) {
+				Logger.error("ATTACHMENTS", validationError);
+				// エラーメッセージをユーザーに表示（トースト通知など）
+				window.alert(validationError);
 				return;
 			}
 

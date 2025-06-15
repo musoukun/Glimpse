@@ -226,7 +226,7 @@ app.whenReady().then(() => {
 							"png",
 							"gif",
 							"webp",
-							"svg",
+							"bmp",
 						],
 					},
 					{
@@ -234,6 +234,7 @@ app.whenReady().then(() => {
 						extensions: [
 							"txt",
 							"md",
+							"markdown",
 							"json",
 							"js",
 							"ts",
@@ -241,11 +242,12 @@ app.whenReady().then(() => {
 							"jsx",
 							"css",
 							"html",
+							"xml",
+							"csv",
+							"log",
+							"yml",
+							"yaml",
 						],
-					},
-					{
-						name: "全てのファイル",
-						extensions: ["*"],
 					},
 				],
 			});
@@ -317,10 +319,11 @@ app.whenReady().then(() => {
 			png: "image/png",
 			gif: "image/gif",
 			webp: "image/webp",
-			svg: "image/svg+xml",
+			bmp: "image/bmp",
 			// テキスト
 			txt: "text/plain",
 			md: "text/markdown",
+			markdown: "text/markdown",
 			json: "application/json",
 			js: "text/javascript",
 			ts: "text/typescript",
@@ -328,9 +331,13 @@ app.whenReady().then(() => {
 			jsx: "text/javascript",
 			css: "text/css",
 			html: "text/html",
-			// デフォルト
+			xml: "application/xml",
+			csv: "text/csv",
+			log: "text/plain",
+			yml: "text/yaml",
+			yaml: "text/yaml",
 		};
-		return mimeTypes[ext] || "application/octet-stream";
+		return mimeTypes[ext] || "text/plain";
 	}
 
 	// ウィンドウサイズ変更のIPCハンドラー

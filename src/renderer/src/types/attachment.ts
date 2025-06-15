@@ -1,7 +1,7 @@
 export interface AttachedFile {
 	id: string;
 	name: string;
-	type: "image" | "document" | "video" | "audio" | "text";
+	type: "image" | "text";
 	mimeType: string;
 	size: number;
 	data: string; // base64エンコードされたデータ
@@ -16,32 +16,7 @@ export interface AttachedScreenshot {
 }
 
 export const SUPPORTED_MIME_TYPES = {
-	image: ["image/png", "image/jpeg", "image/webp"],
-	document: ["application/pdf", "text/plain"],
-	video: [
-		"video/x-flv",
-		"video/quicktime",
-		"video/mpeg",
-		"video/mpegs",
-		"video/mpg",
-		"video/mp4",
-		"video/webm",
-		"video/wmv",
-		"video/3gpp",
-	],
-	audio: [
-		"audio/x-aac",
-		"audio/flac",
-		"audio/mp3",
-		"audio/m4a",
-		"audio/mpeg",
-		"audio/mpga",
-		"audio/mp4",
-		"audio/opus",
-		"audio/pcm",
-		"audio/wav",
-		"audio/webm",
-	],
+	image: ["image/png", "image/jpeg", "image/webp", "image/gif", "image/bmp"],
 	text: [
 		"text/plain",
 		"text/markdown",
@@ -49,14 +24,15 @@ export const SUPPORTED_MIME_TYPES = {
 		"text/typescript",
 		"text/css",
 		"text/html",
+		"text/xml",
+		"text/csv",
+		"application/json",
+		"application/xml",
 	],
 };
 
 export const FILE_SIZE_LIMITS = {
 	image: 7 * 1024 * 1024, // 7MB
-	document: 50 * 1024 * 1024, // 50MB
-	video: 100 * 1024 * 1024, // 100MB (仮)
-	audio: 100 * 1024 * 1024, // 100MB (仮)
 	text: 10 * 1024 * 1024, // 10MB
 };
 

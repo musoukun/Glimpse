@@ -1,0 +1,78 @@
+name: Build Glimpse
+
+on:
+  push:
+    branches: [ main ]
+    tags:
+      - 'v*'
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - os: windows-latest
+            platform: windows
+          - os: macos-latest
+            platform: mac
+          - os: ubuntu-latest
+            platform: linux
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Build app
+      run: npm run build
+
+    - name: Build for Windows
+      if: matrix.platform == 'windows'
+      run: npm run package:win
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Build for macOS
+      if: matrix.platform == 'mac'
+      run: npm run package:mac
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        # For signed builds, add these secrets:
+        # CSC_LINK: ${{ secrets.MAC_CERTS }}
+        # CSC_KEY_PASSWORD: ${{ secrets.MAC_CERTS_PASSWORD }}
+
+    - name: Build for Linux
+      if: matrix.platform == 'linux'
+      run: npm run package:linux
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: ${{ matrix.platform }}-build
+        path: dist/*.*
+        if-no-files-found: error
+
+    - name: Create Release
+      if: startsWith(github.ref, 'refs/tags/')
+      uses: softprops/action-gh-release@v1
+      with:
+        files: dist/*.*
+        draft: true
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
