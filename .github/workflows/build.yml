@@ -47,13 +47,25 @@ jobs:
 
     - name: Build for Windows
       if: matrix.platform == 'windows'
-      run: npm run package:win -- --publish never
+      run: |
+        if [[ "${{ github.ref }}" == "refs/tags/"* ]]; then
+          npm run package:win -- --publish always
+        else
+          npm run package:win -- --publish never
+        fi
+      shell: bash
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Build for macOS
       if: matrix.platform == 'mac'
-      run: npm run package:mac -- --publish never
+      run: |
+        if [[ "${{ github.ref }}" == "refs/tags/"* ]]; then
+          npm run package:mac -- --publish always
+        else
+          npm run package:mac -- --publish never
+        fi
+      shell: bash
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         # For signed builds, add these secrets:
@@ -62,7 +74,13 @@ jobs:
 
     - name: Build for Linux
       if: matrix.platform == 'linux'
-      run: npm run package:linux -- --publish never
+      run: |
+        if [[ "${{ github.ref }}" == "refs/tags/"* ]]; then
+          npm run package:linux -- --publish always
+        else
+          npm run package:linux -- --publish never
+        fi
+      shell: bash
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -78,7 +96,8 @@ jobs:
       uses: softprops/action-gh-release@v1
       with:
         files: dist/*.*
-        draft: true
+        draft: false
         prerelease: false
+        generate_release_notes: true
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

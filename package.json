@@ -129,8 +129,8 @@
 		},
 		"publish": {
 			"provider": "github",
-			"releaseType": "draft",
-			"publishAutoUpdate": false
+			"releaseType": "release",
+			"publishAutoUpdate": true
 		}
 	}
 }
