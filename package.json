@@ -132,6 +132,8 @@
 		},
 		"publish": {
 			"provider": "github",
+			"owner": "musoukun",
+			"repo": "Glimpse",
 			"releaseType": "release",
 			"publishAutoUpdate": true
 		}
