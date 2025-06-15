@@ -79,6 +79,9 @@ const api = {
 		ipcRenderer.removeAllListeners("update:downloaded");
 		ipcRenderer.removeAllListeners("update:error");
 	},
+	
+	// 汎用的なinvokeメソッド（開発テスト用）
+	invoke: (channel: string, ...args: any[]) => ipcRenderer.invoke(channel, ...args),
 };
 
 console.log("Preload: Starting API exposure");

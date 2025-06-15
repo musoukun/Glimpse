@@ -1,7 +1,7 @@
 {
 	"name": "glimpse-electron",
 	"private": true,
-	"version": "0.1.1",
+	"version": "0.1.2",
 	"description": "AI-powered desktop chat application",
 	"author": "Glimpse Team",
 	"type": "module",
@@ -16,7 +16,9 @@
 		"package:win": "electron-builder --win",
 		"package:linux": "electron-builder --linux",
 		"package:all": "node build-all.js --all",
-		"create-uninstaller": "node build/create-uninstaller.js"
+		"create-uninstaller": "node build/create-uninstaller.js",
+		"generate-latest": "node scripts/generate-latest-yml.js",
+		"prepare-release": "node scripts/prepare-release.js"
 	},
 	"dependencies": {
 		"@ai-sdk/anthropic": "^1.2.12",
