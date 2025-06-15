@@ -1,7 +1,7 @@
 {
 	"name": "glimpse-electron",
 	"private": true,
-	"version": "0.1.0",
+	"version": "0.1.1",
 	"description": "AI-powered desktop chat application",
 	"author": "Glimpse Team",
 	"type": "module",
@@ -92,7 +92,10 @@
 			"target": [
 				{
 					"target": "dmg",
-					"arch": ["x64", "arm64"]
+					"arch": [
+						"x64",
+						"arm64"
+					]
 				}
 			],
 			"hardenedRuntime": false,
@@ -129,6 +132,8 @@
 		},
 		"publish": {
 			"provider": "github",
+			"owner": "musoukun",
+			"repo": "Glimpse",
 			"releaseType": "release",
 			"publishAutoUpdate": true
 		}
