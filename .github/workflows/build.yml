@@ -47,13 +47,13 @@ jobs:
 
     - name: Build for Windows
       if: matrix.platform == 'windows'
-      run: npm run package:win
+      run: npm run package:win -- --publish never
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Build for macOS
       if: matrix.platform == 'mac'
-      run: npm run package:mac
+      run: npm run package:mac -- --publish never
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         # For signed builds, add these secrets:
@@ -62,7 +62,7 @@ jobs:
 
     - name: Build for Linux
       if: matrix.platform == 'linux'
-      run: npm run package:linux
+      run: npm run package:linux -- --publish never
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

@@ -127,12 +127,10 @@
 			"icon": "build/icon.png",
 			"target": "AppImage"
 		},
-		"publish": [
-			{
-				"provider": "github",
-				"owner": "your-github-username",
-				"repo": "glimpse"
-			}
-		]
+		"publish": {
+			"provider": "github",
+			"releaseType": "draft",
+			"publishAutoUpdate": false
+		}
 	}
 }
