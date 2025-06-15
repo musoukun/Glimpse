@@ -1,7 +1,7 @@
 {
 	"name": "glimpse-electron",
 	"private": true,
-	"version": "0.1.1",
+	"version": "0.1.2",
 	"description": "AI-powered desktop chat application",
 	"author": "Glimpse Team",
 	"type": "module",
