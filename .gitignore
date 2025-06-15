@@ -32,4 +32,10 @@ vertex-ai-key.json
 .mcp.json
 CLAUDE.md
 .claude
-build
+build/*
+!build/icon.ico
+!build/icon.png
+!build/installer.nsh
+!build/entitlements.mac.plist
+!build/create-icns.sh
+!build/create-ico.ps1
