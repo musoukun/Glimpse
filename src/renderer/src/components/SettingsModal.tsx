@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { X, Download, RefreshCw, CheckCircle, AlertCircle } from "lucide-react";
 import { useUsage } from "../hooks/useUsage";
 import { useUpdater } from "../hooks/useUpdater";
+import ShortcutKeyInput from "./ShortcutKeyInput";
 
 interface SettingsModalProps {
 	isOpen: boolean;
@@ -19,6 +20,9 @@ interface AppSettings {
 		user_prompt: string;
 		font_size: number;
 		grounding_max_tokens: number; // Google検索結果の文字数制限
+	};
+	shortcut_settings: {
+		toggle_window: string; // ウィンドウ表示/非表示のショートカット
 	};
 }
 
@@ -55,6 +59,9 @@ function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 					font_size: 14,
 					grounding_max_tokens: 512, // Google検索結果のデフォルト制限
 				},
+				shortcut_settings: {
+					toggle_window: "Alt+Space",
+				},
 			};
 
 			if (savedSettings) {
@@ -68,6 +75,10 @@ function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 					response_settings: {
 						...defaultSettings.response_settings,
 						...parsed.response_settings,
+					},
+					shortcut_settings: {
+						...defaultSettings.shortcut_settings,
+						...parsed.shortcut_settings,
 					},
 				};
 				setSettings(currentSettings);
@@ -90,6 +101,15 @@ function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 		try {
 			// ローカルストレージに設定を保存
 			localStorage.setItem("glimpse_settings", JSON.stringify(settings));
+
+			// グローバルショートカットを更新
+			if (settings.shortcut_settings.toggle_window) {
+				const success = await window.api.updateGlobalShortcut(settings.shortcut_settings.toggle_window);
+				if (!success) {
+					setError("ショートカットキーの登録に失敗しました。他のアプリケーションで使用されている可能性があります。");
+					return;
+				}
+			}
 
 			// 設定変更イベントを発火
 			window.dispatchEvent(
@@ -135,6 +155,17 @@ function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 			...settings,
 			response_settings: {
 				...settings.response_settings,
+				[key]: value,
+			},
+		});
+	};
+
+	const updateShortcutSetting = (key: string, value: string) => {
+		if (!settings) return;
+		setSettings({
+			...settings,
+			shortcut_settings: {
+				...settings.shortcut_settings,
 				[key]: value,
 			},
 		});
@@ -360,6 +391,17 @@ function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 										AIの回答の文字サイズを調整します
 									</small>
 								</div>
+							</div>
+
+							{/* ショートカット設定 */}
+							<div className="settings-section">
+								<h3>ショートカットキー設定</h3>
+								<ShortcutKeyInput
+									label="ウィンドウの表示/非表示"
+									value={settings.shortcut_settings.toggle_window}
+									onChange={(value) => updateShortcutSetting("toggle_window", value)}
+									description="アプリウィンドウの表示/非表示を切り替えるショートカットキー"
+								/>
 							</div>
 
 							{/* アップデート設定 */}

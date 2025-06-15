@@ -157,7 +157,12 @@ app.whenReady().then(() => {
 			});
 
 			// Supabase Google OAuth URL
-			const authUrl = `${supabaseUrl}/auth/v1/authorize?provider=${provider}&redirect_to=${encodeURIComponent(redirectUrl)}`;
+			let authUrl = `${supabaseUrl}/auth/v1/authorize?provider=${provider}&redirect_to=${encodeURIComponent(redirectUrl)}`;
+			
+			// Googleの場合は常にアカウント選択画面を表示
+			if (provider === 'google') {
+				authUrl += '&prompt=select_account';
+			}
 			authWindow.loadURL(authUrl);
 
 			// 認証成功を検出
@@ -647,16 +652,24 @@ app.whenReady().then(() => {
 		tray?.popUpContextMenu(contextMenu);
 	});
 
-	// ALT + Spaceでウィンドウの表示/非表示を切り替えるグローバルショートカットを登録
-	globalShortcut.register('Alt+Space', () => {
-		if (mainWindow) {
-			if (mainWindow.isVisible()) {
-				mainWindow.hide();
-			} else {
-				mainWindow.show();
-				mainWindow.focus();
+	// 保存されたショートカットキーを読み込むか、デフォルトを使用
+	const savedSettings = mainWindow.webContents.executeJavaScript('localStorage.getItem("glimpse_settings")');
+	savedSettings.then((settingsJson) => {
+		let shortcut = 'Alt+Space'; // デフォルト
+		if (settingsJson) {
+			try {
+				const settings = JSON.parse(settingsJson);
+				if (settings.shortcut_settings?.toggle_window) {
+					shortcut = settings.shortcut_settings.toggle_window;
+				}
+			} catch (e) {
+				console.error('Failed to parse settings:', e);
 			}
 		}
+		registerGlobalShortcut(shortcut);
+	}).catch((err) => {
+		console.error('Failed to load settings:', err);
+		registerGlobalShortcut('Alt+Space');
 	});
 
 	app.on("activate", function () {
@@ -682,6 +695,35 @@ app.on("will-quit", () => {
 	if (tray) {
 		tray.destroy();
 	}
+});
+
+// グローバルショートカットの登録関数
+function registerGlobalShortcut(shortcut: string) {
+	// 既存のショートカットを解除
+	globalShortcut.unregisterAll();
+	
+	// 新しいショートカットを登録
+	const success = globalShortcut.register(shortcut, () => {
+		if (mainWindow) {
+			if (mainWindow.isVisible()) {
+				mainWindow.hide();
+			} else {
+				mainWindow.show();
+				mainWindow.focus();
+			}
+		}
+	});
+	
+	if (!success) {
+		console.error(`Failed to register global shortcut: ${shortcut}`);
+	}
+	
+	return success;
+}
+
+// ショートカット更新のIPCハンドラー
+ipcMain.handle('update-global-shortcut', async (event, newShortcut: string) => {
+	return registerGlobalShortcut(newShortcut);
 });
 
 // In this file you can include the rest of your app"s main process

@@ -2,7 +2,9 @@
   "permissions": {
     "allow": [
       "Bash(rm:*)",
-      "Bash(rg:*)"
+      "Bash(rg:*)",
+      "mcp__brave-search__brave_web_search",
+      "WebFetch(domain:developers.google.com)"
     ]
   },
   "enabledMcpjsonServers": [

@@ -47,6 +47,9 @@ const api = {
 	downloadUpdate: () => ipcRenderer.invoke("update:download"),
 	installUpdate: () => ipcRenderer.invoke("update:install"),
 	
+	// ショートカット関連のAPI
+	updateGlobalShortcut: (shortcut: string) => ipcRenderer.invoke("update-global-shortcut", shortcut),
+	
 	// 更新イベントのリスナー
 	onUpdateChecking: (callback: () => void) => {
 		ipcRenderer.on("update:checking", callback);

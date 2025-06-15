@@ -1,23 +1,42 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Loader2 } from "lucide-react";
 import "./LoginCard.css";
 
 interface LoginCardProps {
-	onEmailLogin?: (email: string, password: string) => Promise<void>;
+	onEmailLogin?: (email: string, password: string, rememberMe: boolean) => Promise<void>;
 	onGoogleLogin?: () => Promise<void>;
+	onSwitchToSignup?: () => void;
 	loading?: boolean;
+	initialEmail?: string;
+	initialPassword?: string;
 }
 
 function LoginCard({
 	onEmailLogin,
 	onGoogleLogin,
+	onSwitchToSignup,
 	loading = false,
+	initialEmail = "",
+	initialPassword = "",
 }: LoginCardProps) {
-	const [email, setEmail] = useState("");
-	const [password, setPassword] = useState("");
+	const [email, setEmail] = useState(initialEmail);
+	const [password, setPassword] = useState(initialPassword);
+	const [rememberMe, setRememberMe] = useState(initialEmail !== "" && initialPassword !== "");
 	const [isLoading, setIsLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
+
+	useEffect(() => {
+		if (initialEmail) {
+			setEmail(initialEmail);
+		}
+		if (initialPassword) {
+			setPassword(initialPassword);
+		}
+		if (initialEmail && initialPassword) {
+			setRememberMe(true);
+		}
+	}, [initialEmail, initialPassword]);
 
 	const handleEmailLogin = async (e: React.FormEvent) => {
 		e.preventDefault();
@@ -31,7 +50,7 @@ function LoginCard({
 		setIsLoading(true);
 
 		try {
-			await onEmailLogin(email, password);
+			await onEmailLogin(email, password, rememberMe);
 			console.log("Email login successful");
 		} catch (err: any) {
 			const errorMessage =
@@ -112,6 +131,20 @@ function LoginCard({
 					</div>
 				</div>
 
+				<div className="form-group">
+					<label className="checkbox-label" style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+						<input
+							type="checkbox"
+							checked={rememberMe}
+							onChange={(e) => setRememberMe(e.target.checked)}
+							style={{ cursor: 'pointer' }}
+						/>
+						<span style={{ fontSize: '0.875rem', color: '#888' }}>
+							ログイン情報を保存する
+						</span>
+					</label>
+				</div>
+
 				{error && (
 					<div className="error-message">
 						<p>{error}</p>
@@ -162,7 +195,7 @@ function LoginCard({
 			</button>
 
 			<div className="login-footer">
-				<p className="footer-text">
+				<p className="footer-text" style={{ marginBottom: '8px' }}>
 					By continuing, you agree to our{" "}
 					<a href="#" className="footer-link">
 						Terms of Service
@@ -171,6 +204,23 @@ function LoginCard({
 					<a href="#" className="footer-link">
 						Privacy Policy
 					</a>
+				</p>
+				<p className="footer-text">
+					アカウントをお持ちでない方は{" "}
+					<button
+						onClick={onSwitchToSignup}
+						style={{
+							background: 'none',
+							border: 'none',
+							color: '#60a5fa',
+							cursor: 'pointer',
+							textDecoration: 'underline',
+							padding: 0,
+							font: 'inherit',
+						}}
+					>
+						新規作成
+					</button>
 				</p>
 			</div>
 		</div>

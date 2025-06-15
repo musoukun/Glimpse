@@ -71,6 +71,9 @@ export interface IApi {
 	
 	// リスナーの削除
 	removeAllUpdateListeners: () => void
+	
+	// ショートカット関連
+	updateGlobalShortcut: (shortcut: string) => Promise<boolean>
 }
 
 export interface UpdateInfo {

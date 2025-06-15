@@ -7,6 +7,7 @@ interface UseSupabaseAuthReturn {
   loading: boolean
   signInWithGoogle: () => Promise<{ error: AuthError | null }>
   signInWithEmail: (email: string, password: string) => Promise<{ error: AuthError | null }>
+  signUpWithEmail: (email: string, password: string) => Promise<{ error: AuthError | null }>
   signOut: () => Promise<{ error: AuthError | null }>
 }
 
@@ -63,14 +64,18 @@ export function useSupabaseAuth(): UseSupabaseAuthReturn {
       // Electronの場合、特別な処理が必要
       if (window.api?.openAuthWindow) {
         // メインプロセス経由で認証ウィンドウを開く
+        // Googleの場合は常にアカウント選択画面が表示される
         const { error } = await window.api.openAuthWindow('google')
         return { error }
       } else {
-        // 通常のWebアプリの場合
+        // 通常のWebアプリの場合、常にアカウント選択画面を表示
         const { error } = await supabase.auth.signInWithOAuth({
           provider: 'google',
           options: {
-            redirectTo: `${window.location.origin}/auth/callback`
+            redirectTo: `${window.location.origin}/auth/callback`,
+            queryParams: {
+              prompt: 'select_account'
+            }
           }
         })
         return { error }
@@ -90,6 +95,19 @@ export function useSupabaseAuth(): UseSupabaseAuthReturn {
       return { error }
     } catch (error) {
       console.error('Email sign in error:', error)
+      return { error: error as AuthError }
+    }
+  }
+
+  const signUpWithEmail = async (email: string, password: string) => {
+    try {
+      const { error } = await supabase.auth.signUp({
+        email,
+        password
+      })
+      return { error }
+    } catch (error) {
+      console.error('Email sign up error:', error)
       return { error: error as AuthError }
     }
   }
@@ -117,6 +135,7 @@ export function useSupabaseAuth(): UseSupabaseAuthReturn {
     loading,
     signInWithGoogle,
     signInWithEmail,
+    signUpWithEmail,
     signOut
   }
 }
