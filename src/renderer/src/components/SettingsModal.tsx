@@ -3,7 +3,6 @@ import { X, Download, RefreshCw, CheckCircle, AlertCircle } from "lucide-react";
 import { useUsage } from "../hooks/useUsage";
 import { useUpdater } from "../hooks/useUpdater";
 import ShortcutKeyInput from "./ShortcutKeyInput";
-import { TailwindTest } from "./TailwindTest";
 
 interface SettingsModalProps {
 	isOpen: boolean;
@@ -407,12 +406,6 @@ function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 
 							{/* アップデート設定 */}
 							<UpdateSection />
-
-							{/* Tailwind CSS v4 テスト */}
-							<div className="settings-section">
-								<h3>Tailwind CSS v4 テスト</h3>
-								<TailwindTest />
-							</div>
 						</>
 					)}
 				</div>
