@@ -3,8 +3,6 @@
 import { createHash } from 'crypto';
 import { readFileSync, writeFileSync, existsSync, statSync } from 'fs';
 import { basename, join } from 'path';
-import { parse } from 'yaml';
-import { stringify } from 'yaml';
 
 // 引数からファイルパスとバージョンを取得
 const args = process.argv.slice(2);
@@ -35,24 +33,19 @@ const hash = createHash('sha512');
 hash.update(fileBuffer);
 const sha512 = hash.digest('base64');
 
-// latest.yml の内容を生成
-const latestYml = {
-  version: version,
-  files: [
-    {
-      url: fileName,
-      sha512: sha512,
-      size: fileSize
-    }
-  ],
-  path: fileName,
-  sha512: sha512,
-  releaseDate: new Date().toISOString()
-};
+// latest.yml の内容を生成（手動でYAML形式を作成）
+const yamlContent = `version: ${version}
+files:
+  - url: ${fileName}
+    sha512: ${sha512}
+    size: ${fileSize}
+path: ${fileName}
+sha512: ${sha512}
+releaseDate: '${new Date().toISOString()}'
+`;
 
 // YAMLファイルを出力
 const outputPath = join('dist', 'latest.yml');
-const yamlContent = stringify(latestYml);
 writeFileSync(outputPath, yamlContent);
 
 console.log(`✅ Generated latest.yml at: ${outputPath}`);
